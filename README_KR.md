@@ -529,6 +529,12 @@ D298·3191 등)을 자동 재현해 검증됐다. 제외된 프레임은 실행 
   −30~−52%로 벌어지는 폭, **"만수면적의 59%"를 "저수율 59%"로 읽으면 안 되는 이유**,
   표기 규칙. 뒤쪽에 `geeflood`(홍수) ↔ `watercompare`(가뭄) 대비표 — **JRC 상시수체를
   쓰는 방향이 서로 반대**다
+- [HV_CURVE_KR.md](docs/drought/HV_CURVE_KR.md) — ⭐ **수위–저수용량 곡선 검증**:
+  WAMIS 웹페이지(OpenAPI 아님)의 20개 댐 H–V 곡선식. **미분하면 수면적이 나온다**
+  (`A(h)=dV/dh`, 백만m³/m = km²) → `AREA_VS_VOLUME` 의 형상지수 `k` 를 실측으로
+  채운다(**한국 다목적댐 k≈1.3~1.7** — V자 2.0은 과하다). WAMIS `rsqty` 대조로
+  댐별 계통 편차 −12%~+13% 확인(수위를 14m 바꿔도 고정 → 식의 모양은 맞고 기준이
+  다르다). 전사 오류·2변수 행·커버리지 공백 10곳 정리
 - [FLOOD_TIMELINE_KR.md](docs/flood/FLOOD_TIMELINE_KR.md) — **침수 시간선**: 날짜별
   위성영상·침수 면적·남북 분리, 해석 주의사항 (핵심 결과 문서)
 - [FLOOD_NORTH_KOREA_KR.md](docs/flood/FLOOD_NORTH_KOREA_KR.md) — **북한 지역 전용**:
