@@ -21,6 +21,15 @@ cd "$(dirname "$0")/.."
 lane=$1; shift
 log=temp/logs/rtc_poeorb_${lane}.log
 
+# WAIT_PIDS="<pid> <pid>" — 그 Windows 프로세스들이 모두 끝날 때까지 기다린다.
+# 앞 배치의 러너를 살려 둔 채 레인(bash)만 바꿔 끼울 때 쓴다(2026-10-05 우선순위 재편).
+if [ -n "${WAIT_PIDS:-}" ]; then
+    echo "=== $(date '+%F %T') 대기: PID $WAIT_PIDS 종료" >> "$log"
+    for p in $WAIT_PIDS; do
+        while tasklist //FI "PID eq $p" 2>/dev/null | grep -qw "$p"; do sleep 60; done
+    done
+fi
+
 if [ -n "${WAIT_FOR:-}" ]; then
     echo "=== $(date '+%F %T') 대기: $WAIT_FOR" >> "$log"
     until grep -qxh "$WAIT_FOR" temp/logs/rtc_poeorb_*.log 2>/dev/null; do sleep 60; done

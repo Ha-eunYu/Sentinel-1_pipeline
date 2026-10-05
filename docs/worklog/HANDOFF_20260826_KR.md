@@ -71,6 +71,11 @@ conda run -n s1_snappy python -u -m s1.tools.preprocess.batch_grd_rtc_frost \
 **2025-07~08 은 POEORB 20 / RESORB 9**(전부 정밀궤도가 아니다),
 **2026 년은 사실상 전량 RESORB**.
 
+> ⚠ **2026-10-05 정정** — 2025 RESORB 9 는 전부 "로그없음" **추정**이었고, 캐시
+> 증거상 **POEORB 였을 가능성이 매우 높다**(ORBIT_TYPE_AUDIT 머리의 정정 상자).
+> 2026 RESORB 는 로그 확정이라 유효하다. 아래 §2 의 A 배치 "RESORB 9" 도 같은 뜻으로
+> 읽을 것 — 그 재처리는 궤도가 아니라 **DEM 통일**의 효과만 있었다.
+
 ### 1.5 2025-07/08 미처리 49 장 footprint 실측 — 제외 0 장
 
 `classify_region`(KML 실측, STAC 공칭 아님)으로 전수 측정했다.
