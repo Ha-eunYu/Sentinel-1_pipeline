@@ -14,6 +14,7 @@
 | `bench_sarsen/` | 0.1 GB | 같은 씬을 **sarsen**(SNAP 없이)으로 RTC — 위와 1:1 대조 | 〃 |
 | `otsu_on_gtc/` | 0.3 GB | GTC(지형 평탄화 없음)로 Otsu 수체 판별 → RTC와 비교 | [RTC_VS_GTC_KR.md](../docs/pipeline/RTC_VS_GTC_KR.md) |
 | `dem_clip_test/` | 0.2 GB | DEM clip 범위 실험 | — |
+| `swot_wamis/` | < 1 MB | SWOT LakeSP ↔ WAMIS 수위, SAR 면적 ↔ WAMIS 저수량 대조 CSV | [REVIEW_20261005_KR.md](../docs/drought/REVIEW_20261005_KR.md) |
 
 ## 정리 기준
 

@@ -10,6 +10,8 @@
 | `sentinel1_grd/` 🔗 | 180 GB | **원본 GRD zip**. 모든 재처리의 입력. **junction → `E:\06_SAR_system_archive\sentinel1_grd`** |
 | `sentinel1/` 🔗 | 102 GB | 원본 SLC zip. **junction → `D:\06_SAR_system_archive\sentinel1`** |
 | `sentinel1_slc_202507/` | 17 GB | 25년 7월 SLC 4장 (간섭 분석용, 별도 수집). F: 실물 |
+| `rtc_grd_frost_vh_poeorb_2026/` 🔗 | 진행 중 | **2026-07/08 POEORB 재처리 RTC**(VH·Frost·peninsula DEM). **junction → `E:\06_SAR_system_archive\rtc_grd_frost_vh_poeorb_2026`** (2026-10-05, F: 여유 부족). 대상 52장 — [REVIEW_20261005_KR.md](../drought/REVIEW_20261005_KR.md) §1 |
+| `rtc_grd_frost_vh_poeorb_2025/` 🔗 | 진행 중 | **2025-07/08 POEORB 재처리 RTC**(같은 규격). **junction → `E:\06_SAR_system_archive\rtc_grd_frost_vh_poeorb_2025`**. 옛 F: 실물 폴더 `rtc_grd_frost_vh_poeorb/`(17장)를 2026-10-05 이리로 옮겼다(파일별 크기 대조 후 삭제) — **옛 경로는 없다**. 대상 54장 — 같은 문서 §1-3 |
 
 ### 🔗 junction 주의
 

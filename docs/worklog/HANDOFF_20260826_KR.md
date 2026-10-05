@@ -6,6 +6,11 @@
 [BBOX_RANGES_KR.md](../pipeline/BBOX_RANGES_KR.md) ·
 [PREPROCESSING_SPEC_KR.md](../pipeline/PREPROCESSING_SPEC_KR.md)
 
+> **2026-10-05 갱신 — 이 문서의 §2·§3 은 이어받아 진행 중이다.** 2025·2026 POEORB
+> 재처리를 다시 걸었고, 출력은 E: 로 옮겼다. **`downloads/rtc_grd_frost_vh_poeorb/`
+> 는 이제 없다** → `rtc_grd_frost_vh_poeorb_2025`(junction). 대상·큐·일정은
+> [REVIEW_20261005_KR.md](../drought/REVIEW_20261005_KR.md) §1.
+
 **2026-09-10 현재 실행 중인 작업 없음.** 8/27 오전 이후 재처리는 멈춰 있다
 (17/30). 3 절의 명령으로 재개한다.
 
