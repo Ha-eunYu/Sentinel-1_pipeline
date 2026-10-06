@@ -204,6 +204,14 @@ POEORB는 관측 **약 20일 후** 공개된다. 08-02~08-13 관측을 08-17~18�
 **할 일** — ① 산출물 사이드카에 `DEM`·`orbit source`를 남긴다.
 ② 8월분은 09월 초(관측 +20일) 이후 POEORB로 재처리할지 결정한다 —
 **결정 전에 같은 씬 1장을 POEORB로 다시 구워 기하 차이를 실측**한다.
+
+> **2026-10-05 결정·진행 — 전량 POEORB 재처리.** 실측 비교 없이 **2025·2026 7·8월 전부를
+> POEORB 로 다시 낸다**(사용자 결정, gee `todo.md` §A ③). 폴백을 막으려고 해당 월 POEORB 를
+> ESA STEP 에서 **미리 캐시에 채우고**(위성·월별 31~32개) 돌린다. 산출은 E: —
+> `downloads/rtc_grd_frost_vh_poeorb_{2025,2026}`(junction). 2026-10-05~ 로그에 `Restituted` 0건.
+> ⚠ 2025 는 원래도 POEORB 였다 — ORBIT_TYPE_AUDIT 의 "2025 RESORB 9장"은 틀린 추정(머리 정정).
+> 현황: [REVIEW_20261005_KR.md](../drought/REVIEW_20261005_KR.md) §1 ·
+> [POEORB_INVENTORY_KR.md](POEORB_INVENTORY_KR.md)
 ③ `Sentinel1Calibrator: calibration LUT ... may not be reliable` 경고도
 전 배치에서 나온다(원인 미확인, 별건으로 추적).
 

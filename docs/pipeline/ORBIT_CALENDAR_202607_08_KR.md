@@ -184,3 +184,6 @@ conda run -n s1_snappy python -m s1.tools.audit.vh_coverage_report \
 - [DROUGHT_KR.md](../drought/DROUGHT_KR.md) — 25 ↔ 26년 비교 설계
 - [FLOOD_TIMELINE_KR.md](../flood/FLOOD_TIMELINE_KR.md) — 26년 7월 홍수 시간선
   (층 3의 `flood` 태그 근거)
+
+> 2026-10-06: 이 `flood` 근거는 **침수 시간선**이다. WAMIS 강우로는 26-07-14 직전 5일이 남부
+> 0~3 mm 다 — 남부 유역에서는 `flood` 로 볼 근거가 약하다(BASELINE_DESIGN 층 3 갱신 상자).
