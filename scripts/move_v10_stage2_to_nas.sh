@@ -30,6 +30,6 @@ while IFS= read -r src; do
     else
         bad=$((bad+1)); echo "⚠ 불일치 — 로컬 유지: $name 로컬 $s / NAS $d" >> "$log"
     fi
-done < temp/egm_stage2_v10_files.txt
+done < "${LIST:-temp/egm_stage2_v10_files.txt}"
 echo "=== $(date '+%F %T') 끝: 일치 $ok · 불일치 $bad" >> "$log"
 echo "MOVE_DONE ok=$ok bad=$bad" >> "$log"

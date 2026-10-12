@@ -35,8 +35,8 @@ external DEM은 유역 범위만 덮는다. 전 granule을 처리하면 DEM 창 
 ⚠ 두 가지
     · **VRT는 external DEM으로 못 읽는다** — `cop30_korea.vrt`로 시도한 패치
       20건이 전부 `Graph execution failed`였다. GeoTIFF로 구울 것.
-    · **`externalDEMApplyEGM=False`** — COP30은 타원체고다. `True`면 지오이드
-      보정이 이중 적용돼 약 25 m 어긋난다.
+    · ~~`externalDEMApplyEGM=False` — COP30은 타원체고다~~ → **틀렸다(ISSUES #26)**. COP30 은
+      EGM2008 정표고라 `True` 여야 한다. False 로 쓴 산출은 센서 쪽으로 30~50 m 밀린다.
 
 실행
 ----

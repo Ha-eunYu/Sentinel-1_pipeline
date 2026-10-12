@@ -15,9 +15,9 @@
     cop30_fix    육지 안 0값 → 0.1 m
     ngii_hybrid  육지 안 0값 → NGII(64.7%) 우선, 없으면 0.1 m
 
-⚠ `externalDEMApplyEGM=False` — COP30·NGII 둘 다 이미 타원체고다. 실측
-   COP30−NGII 중앙이 −0.64 m라 지오이드고(+24~26 m)가 아니다. `True`로 주면
-   이중 보정이 된다.
+⚠ (2026-10-12 정정 — ISSUES #26) 옛 문구 "COP30·NGII 둘 다 이미 타원체고"는 **거꾸로 읽은 것**이다.
+   COP30−NGII 중앙이 −0.64 m 라는 실측은 둘이 **같은 기준**이라는 뜻이고, NGII 는 인천만 평균해수면
+   기준 **정표고**다 → COP30 도 정표고다. 그래서 `externalDEMApplyEGM=True` 여야 한다.
 
 실행
 ----

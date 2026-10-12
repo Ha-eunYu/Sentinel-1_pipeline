@@ -12,9 +12,10 @@ SNAP에 `demName="Copernicus 30m Global DEM"`을 주면 자동 다운로드 캐�
 **SNAP이 VRT를 external DEM으로 못 읽는다.** `cop30_korea.vrt`로 시도한 패치
 20건이 전부 `Graph execution failed`로 죽었다. GeoTIFF로 구우면 된다.
 
-⚠ 수직 기준
-    COP30은 **타원체고**다. `externalDEMApplyEGM=False`로 줘야 한다.
-    `True`(기본값)로 주면 지오이드 보정이 이중 적용돼 한국에서 약 25 m 어긋난다.
+⚠ 수직 기준 (2026-10-12 정정 — ISSUES #26)
+    COP30은 **EGM2008 지오이드 정표고**다(바다 0.00 m). SNAP external DEM 으로 줄 때는
+    `externalDEMApplyEGM=True`(배치 러너 `--dem-egm`)로 줘야 제자리에 놓인다. 옛 문구
+    "COP30은 타원체고, True면 이중 적용"은 틀렸다 — False 로 쓴 RTC 는 센서 쪽으로 30~50 m 밀렸다.
 
 실행
 ----

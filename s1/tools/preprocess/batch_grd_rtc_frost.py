@@ -93,14 +93,18 @@ def main() -> None:
                          f"(정상 42~100%%, 빈 껍데기 0%%). 0 이면 검사 끔. "
                          f"⚠ 기울어진 스와스는 기하만으로 40%%대가 정상이다")
     ap.add_argument("--dem-egm", action="store_true",
-                    help="External DEM에 EGM 지오이드 보정을 적용한다. **COP30에는 "
-                         "주지 말 것** — COP30은 이미 타원체고라 이중 적용되면 "
-                         "약 25 m 어긋난다. NGII처럼 정표고 DEM일 때만 켠다.")
+                    help="External DEM에 EGM 지오이드 보정을 적용한다. **COP30·NGII 모두 "
+                         "켤 것** — 둘 다 정표고(COP30 = EGM2008, 바다 0 m)다. 끄면 지형이 "
+                         "지오이드고(한국 25~28 m)만큼 낮게 들어가 영상이 센서 쪽으로 30~50 m "
+                         "밀린다(ISSUES #26, 2026-10-12 실측). 옛 도움말의 '이중 적용'은 틀렸다.")
     args = ap.parse_args()
 
     dem_file = Path(args.dem).resolve() if args.dem else None
     if dem_file is not None and not dem_file.exists():
         raise FileNotFoundError(f"External DEM이 없습니다: {dem_file}")
+    if dem_file is not None and not args.dem_egm:
+        print("⚠ External DEM 을 EGM 끔으로 쓴다 — COP30·NGII(정표고)면 영상이 30~50 m 밀린다"
+              "(ISSUES #26). 타원체고 DEM 이 확실할 때만 이렇게 쓴다.", flush=True)
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

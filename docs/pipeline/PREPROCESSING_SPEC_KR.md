@@ -101,7 +101,7 @@ Read → Apply-Orbit-File → ThermalNoiseRemoval → Calibration(Beta0)
 | **편파** | **VH** | GEE 수체탐지와 정합. VV 대비 물/육지 대비가 안정적이고 풍파에 덜 민감. VV와는 약 6 dB 오프셋이라 **절대 섞지 않는다** |
 | **Speckle 필터** | **Frost** (SNAP 기본 3×3, damping 2.0) | VV·VH 양쪽에서 검증(3절) |
 | **DEM** | **external `korea_peninsula_cop30.tif`** | 1절 |
-| EGM 지오이드 보정 | ~~끄기(`--dem-egm` 미사용)~~ **⚠ 재검토 중(ISSUES #26)** | ~~COP30은 이미 타원체고~~ — **틀렸다(10-12)**: DEM 바다가 0.00 m 인 지오이드 정표고다. 끄면 RTC 가 센서 쪽으로 30~50 m 밀린다. `--dem-egm` 2장 시험 중 |
+| EGM 지오이드 보정 | **켜기(`--dem-egm`)** — 2026-10-12 확정(ISSUES #26) | COP30 은 바다가 0.00 m 인 EGM2008 **정표고**다. 끄면(8-10~10-12 판) 영상이 센서 쪽으로 30~50 m 밀린다. 시험 3판정 통과(상승↔하강 −8 → −1화소, 폴리곤 최대 −4·+6 → −1·+1) |
 | 궤도 | Sentinel Precise (Auto Download), polyDegree 3, `continueOnFail=false` | 예측궤도는 수십 m 오차. ⚠ **`continueOnFail=false`는 POEORB 강제가 아니다** — POEORB가 없으면 SNAP이 조용히 **RESORB로 대체**하고 정상 종료한다(2-2절) |
 | 열잡음 제거 | `removeThermalNoise=true` | 수체는 저후방산란이라 열잡음 비중이 크다 |
 | 캘리브레이션 | **Beta0만** 출력 | Terrain-Flattening 입력 요건 |
@@ -318,5 +318,5 @@ Terrain-Flattening 결과가 전부 무효가 되는데 SNAP은 오류 없이 �
 1. **편파 VH** — VV와 섞지 않는다(약 6 dB 오프셋)
 2. **필터 Frost** — Refined Lee는 가는 수로를 절반 날린다
 3. **DEM `korea_peninsula_cop30.tif`** — 범위가 다른 DEM을 섞지 않는다
-4. ~~**EGM 보정 끄기** — COP30은 타원체고~~ **⚠ 재검토 중** — COP30 은 지오이드 정표고다(ISSUES #26)
+4. **EGM 보정 켜기**(`--dem-egm`) — COP30 은 지오이드 정표고다(ISSUES #26, 10-12 확정)
 5. **10 m · EPSG:4326 · dB**
