@@ -77,6 +77,17 @@ class Dam:
         return f"{self.damnm}({self.damcd})"
 
 
+# 목록 API(``mn_dammain``)에서는 빠졌는데 **자료는 계속 나오는** 댐. 이름 해석에만 쓴다.
+# 2026-10-05 목록이 79 → 49곳으로 줄며 둘이 빠져 ``--preset reservoirs`` 가 멈췄다
+# (REVIEW_20261005 §2-4). 코드는 9-09 판 일자료 CSV 의 값이고, 2026-10-12 에 둘 다
+# 일자료(10-01 ~ 10-10, 10행)가 나오는 것을 확인했다.
+# ⚠ **자료가 나오는 것을 확인한 코드만 적는다** — 없는 코드도 ``success``/0 으로 답한다.
+DELISTED = (
+    Dam("2002111", "성덕", "낙동강", None, None),
+    Dam("4007210", "동복", "섬진강", None, None),
+)
+
+
 def normalize(name: str) -> str:
     """이름 비교용 키. 괄호·공백·가운뎃점을 지우고 꼬리의 댐/보/호/저수지를 뗀다.
 
@@ -88,7 +99,10 @@ def normalize(name: str) -> str:
 
 
 def fetch_dams(**kw) -> list[Dam]:
-    """전국 댐·보 목록. 권역 5개를 순서대로 받아 합친다(2026-09-09 기준 79곳)."""
+    """전국 댐·보 목록. 권역 5개를 순서대로 받아 합친다(2026-09-09 79곳 → 10-05 49곳).
+
+    API 가 준 그대로다 — :data:`DELISTED` 는 여기 섞지 않고 :func:`build_index` 가 붙인다.
+    """
     out: list[Dam] = []
     for basin in BASINS:
         for r in rows("wkd", "mn_dammain", {"basin": basin}, **kw):
@@ -102,10 +116,15 @@ def fetch_dams(**kw) -> list[Dam]:
     return out
 
 
-def build_index(dams: list[Dam]) -> dict[str, Dam]:
-    """정규화 이름 → Dam. 이름이 겹치면 **먼저 온 것**을 남긴다(권역 순)."""
+def build_index(dams: list[Dam], *, delisted: bool = True) -> dict[str, Dam]:
+    """정규화 이름 → Dam. 이름이 겹치면 **먼저 온 것**을 남긴다(권역 순).
+
+    ``delisted`` 이면 목록에 없는 :data:`DELISTED` 를 **맨 뒤에** 붙인다 — 목록에 다시
+    나타나면 목록 쪽이 이긴다.
+    """
     idx: dict[str, Dam] = {}
-    for d in dams:
+    have = {d.damcd for d in dams}
+    for d in [*dams, *(x for x in DELISTED if delisted and x.damcd not in have)]:
         idx.setdefault(normalize(d.damnm), d)
     return idx
 
@@ -119,7 +138,7 @@ def resolve(name: str, dams: list[Dam] | dict[str, Dam]) -> Dam | None:
     key = name.strip()
 
     if key.isdigit():                                   # 이미 댐코드로 준 경우
-        for d in (dams.values() if isinstance(dams, dict) else dams):
+        for d in [*(dams.values() if isinstance(dams, dict) else dams), *DELISTED]:
             if d.damcd == key:
                 return d
         return None

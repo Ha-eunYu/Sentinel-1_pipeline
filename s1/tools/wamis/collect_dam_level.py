@@ -23,7 +23,7 @@ docs/drought/AREA_VS_VOLUME_KR.md §5-1. **이 도구가 그 "공식 값"을 가
 
 실행
 ----
-    # 무엇이 있나 (전국 79곳, 캐시도 남긴다)
+    # 무엇이 있나 (전국 49곳 + 목록 밖 보조, 캐시도 남긴다)
     python -m s1.tools.wamis.collect_dam_level --list
 
     # 가뭄 산출이 보는 담수호 21곳의 저수율, 최근 1년
@@ -106,6 +106,13 @@ def cmd_list() -> int:
         who = " ".join(tagged.get(d.damcd, []))
         print(f"  {d.damcd}  {d.damnm:12s} {str(d.bbsnnm or '-'):8s} "
               f"{str(d.mggvnm or '-'):10s} {who}")
+    extra = [d for d in damlib.DELISTED if d.damcd not in {f.damcd for f in found}]
+    if extra:
+        # 캐시 CSV 에는 넣지 않는다 — 그 파일은 API 가 준 목록 그대로여야 목록 변화를 본다.
+        print(f"\n목록 밖 보조 {len(extra)}곳 (dams.DELISTED — 자료는 나온다, 이름 해석에만 쓴다)")
+        for d in extra:
+            print(f"  {d.damcd}  {d.damnm:12s} {str(d.bbsnnm or '-'):8s} "
+                  f"{'-':10s} {' '.join(tagged.get(d.damcd, []))}")
 
     _write_csv(Path(WAMIS_DAM_LIST_CSV),
                [{"damcd": d.damcd, "damnm": d.damnm, "bbsnnm": d.bbsnnm,
