@@ -10,6 +10,8 @@ gee `kwater/orbit_vrt.py` 가 읽는 `downloads/water_otsu_vh/vrt/mosaic_{날짜
 - VRT 생성은 `build_water_per_date_otsu.build_group_vrt`(전역 격자 `-tap`)를 그대로 쓴다.
 - 처음 실행 때 옛 VRT 폴더를 `vrt_stale_rtc_grd_frost_vh_20261006` 으로 백업한다.
 - rel 61(추후)·rel 32(짝 없음)는 건너뛴다.
+- 모자이크에는 그 패스의 **완료된 프레임을 모두** 넣는다 — 대상(남한 대권역 1%↑) 밖 프레임도
+  처리돼 있으면 들어간다(2026-10-12: 한강 유역 밖 북한 9장을 따로 재처리했다).
 
     conda run -n s1_snappy python -m s1.tools.mosaic.rebuild_vrt_poeorb
 """
@@ -54,7 +56,8 @@ if not bak.exists():
     print(f"옛 VRT 백업 -> {bak}")
 for (d, ab), rel, n, tot in ok:
     v = m.build_group_vrt(d, ab, sorted(done[(d, ab)]), VRT_DIR)
-    print(f"재작성 {v.name}  rel{rel}  {n}/{tot}장")
+    extra = len(done[(d, ab)]) - tot
+    print(f"재작성 {v.name}  rel{rel}  대상 {tot}장" + (f" + 대상 밖 {extra}장" if extra else ""))
 print("\n아직(일부 프레임 미완료) — 나중에 다시:")
 for (d, ab), rel, n, tot in partial:
     print(f"  {d} o{ab} rel{rel}  {n}/{tot}")
