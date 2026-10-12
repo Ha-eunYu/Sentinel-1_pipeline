@@ -18,6 +18,7 @@ SAR 면적은 어디서 오나 (2026-10-12)
     python -m s1.tools.wamis.sar_vs_wamis_storage                         # v9
     python -m s1.tools.wamis.sar_vs_wamis_storage --sar-csv <gee>/output/reservoir_km2_v10.csv --tag v10
     python -m s1.tools.wamis.sar_vs_wamis_storage --sar-csv ... --dry-run  # WAMIS 없이 면적만
+    python -m s1.tools.wamis.sar_vs_wamis_storage --sens-csv <gee>/output/reservoir_km2_d134_sens.csv  # 8월 D134 민감도 4쌍
 
 산출: ``experiments/swot_wamis/sar_vs_wamis_{tag}.csv``.
 
@@ -28,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import functools
 import math
 import sys
 import time
@@ -53,6 +55,15 @@ DATES = {"A": ("20250725", "20260715", "20250806", "20260802"),
 HOUR = {"A": (18, 18, 18, 18), "B": (6, 6, 18, 18)}
 SHIFT = {"A": (0, 0, 0, 0), "B": (1, 1, 0, 0)}   # DESC 134 는 KST 로 하루 넘어간다
 
+# 8월 DESC134 S1C↔S1C 민감도 4쌍 (2026-10-12 사용자 결정 — REVIEW_20261005 §2-6 재결정 박스).
+# 대상은 D134 가 4일 모두 덮는 보고서 저수지뿐(밀양·영천·성덕·운문은 못 덮는다).
+# 4일 모두 UTC 21:30 → KST 익일 06:30 → 06시(위 B군 7월과 같은 규칙).
+# gee 산출 output/reservoir_km2_d134_sens.csv — 열 이름 `2025-08-11_DESC134`.
+SENS_LAKES = ("안동호", "임하호", "옥정호", "평림호")
+SENS_PAIRS = (("20250811", "20260813"), ("20250811", "20260825"),
+              ("20250823", "20260813"), ("20250823", "20260825"))
+SENS_REL, SENS_HOUR, SENS_SHIFT = "DESC134", 6, 1
+
 
 def sar_from_csv(path: Path) -> dict[str, tuple[float | None, ...]]:
     """gee reservoir_series CSV -> {저수지: (DATES 순 4개 km² 또는 None)}."""
@@ -69,19 +80,79 @@ def sar_from_csv(path: Path) -> dict[str, tuple[float | None, ...]]:
     return out
 
 
+def sens_from_csv(path: Path) -> dict[str, dict[str, float | None]]:
+    """민감도 CSV -> {저수지: {YYYYMMDD: km² 또는 None}} (열 `YYYY-MM-DD_DESC134`)."""
+    with open(path, encoding="utf-8-sig", newline="") as fh:
+        rows = {r["저수지"]: r for r in csv.DictReader(fh)}
+    days = sorted({d for p in SENS_PAIRS for d in p})
+    out = {}
+    for name in SENS_LAKES:
+        r = rows.get(name, {})
+        out[name] = {}
+        for d in days:
+            v = (r.get(f"{d[:4]}-{d[4:6]}-{d[6:]}_{SENS_REL}") or "").strip()
+            out[name][d] = float(v) if v else None
+    return out
+
+
+@functools.lru_cache(maxsize=None)
 def at(damcd: str, day: str, hour: int) -> dict:
+    """그 댐의 그날 시자료 중 hour 시 행(없으면 마지막 행). 같은 (댐, 날, 시) 는 한 번만 묻는다."""
+    time.sleep(0.3)
     f = series.hourly(damcd, day, day)
     hh = f"{day}{hour:02d}"
     return next((x for x in f.rows if str(x.get("obsdh", "")).startswith(hh)), None) \
         or (f.rows[-1] if f.rows else {})
 
 
+def kst_day(d: str, shift: int) -> str:
+    return (datetime.strptime(d, "%Y%m%d") + timedelta(days=shift)).strftime("%Y%m%d")
+
+
+def compare(name: str, lab: str, r0: dict, r1: dict, a0: float | None, a1: float | None) -> list:
+    """한 쌍의 SAR 면적 변화 ↔ WAMIS 저수량 변화 한 줄."""
+    v0, v1 = r0.get("rsqty"), r1.get("rsqty")
+    ok = a0 and a1
+    dA = a1 / a0 - 1 if ok else None
+    dV = v1 / v0 - 1 if v0 and v1 else None
+    k = math.log(v1 / v0) / math.log(a1 / a0) if ok and v0 and v1 and a1 != a0 else None
+    return [name, lab, r0.get("obsdh"), r1.get("obsdh"), r0.get("rwl"), r1.get("rwl"),
+            round(r1["rwl"] - r0["rwl"], 2) if r0.get("rwl") and r1.get("rwl") else None,
+            r0.get("rsrt"), r1.get("rsrt"), round(dA * 100, 1) if dA is not None else None,
+            round(dV * 100, 1) if dV is not None else None, round(k, 2) if k else None]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--sar-csv", type=Path, help="gee reservoir_series --csv 산출 (없으면 v9 보고서 값)")
+    ap.add_argument("--sens-csv", type=Path,
+                    help="8월 DESC134 민감도 4쌍 CSV(gee reservoir_km2_d134_sens.csv) — 이 모드만 돈다")
     ap.add_argument("--tag", help="산출 파일 꼬리표 (기본: v9 또는 CSV 이름)")
     ap.add_argument("--dry-run", action="store_true", help="WAMIS 를 부르지 않고 SAR 면적·변화율만 찍는다")
     a = ap.parse_args()
+
+    out = [["저수지", "월", "t0", "t1", "rwl0", "rwl1", "dh_m", "rsrt0", "rsrt1",
+            "SAR_dA_pct", "WAMIS_dV_pct", "k_eff"]]
+    if a.sens_csv:
+        sens = sens_from_csv(a.sens_csv)
+        tag = a.tag or a.sens_csv.stem
+        print(f"민감도 4쌍 ({SENS_REL}) SAR 면적: {a.sens_csv}")
+        for name in SENS_LAKES:
+            cd = DAMS[name][0]
+            for d0, d1 in SENS_PAIRS:
+                a0, a1 = sens[name][d0], sens[name][d1]
+                lab = f"8월 D134 {d0[4:]}→{d1[4:]}"
+                if a.dry_run:
+                    pct = f"{(a1 / a0 - 1) * 100:+.1f}%" if a0 and a1 else "- (면적 없음)"
+                    print(f"  {name:6s} {lab}  {a0} → {a1}  {pct}")
+                    continue
+                row = compare(name, lab, at(cd, kst_day(d0, SENS_SHIFT), SENS_HOUR),
+                              at(cd, kst_day(d1, SENS_SHIFT), SENS_HOUR), a0, a1)
+                out.append(row)
+                print(row, flush=True)
+        if not a.dry_run:
+            write(out, tag)
+        return
 
     sar = sar_from_csv(a.sar_csv) if a.sar_csv else SAR_V9
     tag = a.tag or (a.sar_csv.stem if a.sar_csv else "v9")
@@ -96,28 +167,17 @@ def main() -> None:
             print(f"  {name:6s} {v}  7월 {pct[0]}  8월 {pct[1]}")
         return
 
-    out = [["저수지", "월", "t0", "t1", "rwl0", "rwl1", "dh_m", "rsrt0", "rsrt1",
-            "SAR_dA_pct", "WAMIS_dV_pct", "k_eff"]]
     for name, (cd, grp) in DAMS.items():
-        vals = []
-        for i, d in enumerate(DATES[grp]):
-            day = (datetime.strptime(d, "%Y%m%d") + timedelta(days=SHIFT[grp][i])).strftime("%Y%m%d")
-            vals.append(at(cd, day, HOUR[grp][i]))
-            time.sleep(0.3)
+        vals = [at(cd, kst_day(d, SHIFT[grp][i]), HOUR[grp][i]) for i, d in enumerate(DATES[grp])]
         a_ = sar[name]
         for i0, i1, lab in [(0, 1, "7월"), (2, 3, "8월")]:
-            r0, r1 = vals[i0], vals[i1]
-            v0, v1 = r0.get("rsqty"), r1.get("rsqty")
-            ok = a_[i0] and a_[i1]
-            dA = a_[i1] / a_[i0] - 1 if ok else None
-            dV = v1 / v0 - 1 if v0 and v1 else None
-            k = math.log(v1 / v0) / math.log(a_[i1] / a_[i0]) if ok and v0 and v1 and a_[i1] != a_[i0] else None
-            row = [name, lab, r0.get("obsdh"), r1.get("obsdh"), r0.get("rwl"), r1.get("rwl"),
-                   round(r1["rwl"] - r0["rwl"], 2) if r0.get("rwl") and r1.get("rwl") else None,
-                   r0.get("rsrt"), r1.get("rsrt"), round(dA * 100, 1) if dA is not None else None,
-                   round(dV * 100, 1) if dV is not None else None, round(k, 2) if k else None]
+            row = compare(name, lab, vals[i0], vals[i1], a_[i0], a_[i1])
             out.append(row)
             print(row, flush=True)
+    write(out, tag)
+
+
+def write(out: list[list], tag: str) -> None:
     dest = ROOT / "experiments" / "swot_wamis" / f"sar_vs_wamis_{tag}.csv"
     dest.parent.mkdir(parents=True, exist_ok=True)
     with open(dest, "w", newline="", encoding="utf-8-sig") as fh:
