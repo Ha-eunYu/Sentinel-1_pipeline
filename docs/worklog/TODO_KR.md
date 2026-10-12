@@ -35,8 +35,9 @@
 >
 > POEORB 재처리 **83/83장 완료**(10-11), 모자이크 29개 재작성. 남은 것:
 >
-> - [ ] **죽은 VRT 24개**(rel 25·156·32·105·61 — `water_otsu_vh/vrt/` 에서 옛 `rtc_grd_frost_vh/` 를
->       가리켜 안 열림) — **결정: 지금은 그대로(A), 포스터 끝나면 `_stale/` 로 치운다(C).**
+> - [x] **죽은 VRT 24개**(rel 25·156·32·105·61 — `water_otsu_vh/vrt/` 에서 옛 `rtc_grd_frost_vh/` 를
+>       가리켜 안 열림) — 처음 결정은 "지금 A, 포스터 뒤 C" 였으나 **10-12 사용자가 앞당겨 `vrt/_stale/` 로
+>       옮겼다**(원본 경로 존재로 판정, 정확히 24개). `vrt/` 에는 살아 있는 29개만 남았다.
 >       gee 는 이미 걸러낸다(`af04ed8`). NAS 복원안(B)은 **뺐다**(gee `022ebdb`): 옛 RTC 는 NAS
 >       (`X:\02_Analysis\Sentinel-1_Drought\`)에 있지만 되살려도 쓸 데가 없다 — rel 156·32·105·61 은 2026 만
 >       있어 짝이 없고, rel 25 는 관심 유역 교차 0% 다. 게다가 RESORB·옛 DEM 이라 지금 규격과 섞인다.
@@ -56,6 +57,16 @@
 > - [x] **`rtc_grd_frost_vh/_autodem_20260807/` 6.6 GB** — 8월 A군(08-06↔08-02) 자동캐시 DEM 판 5장.
 >       **NAS 에 동일본이 있어**(`X:\02_Analysis\Sentinel-1_Drought\_autodem_20260807\`, 5/5 크기 일치)
 >       **10-12 로컬만 지웠다.** F 여유 22 → 28.4 GB. 논문 부록에 필요하면 NAS 에서 가져온다.
+> - [x] **모든 관측 29개의 직전 5일 강우 주석** — `python -m s1.tools.wamis.rain_phase` →
+>       `data/rain_phase_5d.csv`(관측 × 권역) · `data/rain_phase_5d_dam.csv`(관측 × 담수호 21).
+>       표·해석: [REVIEW_20261005_KR.md](../drought/REVIEW_20261005_KR.md) §2-6-1. ⚠ **2026 도 8월 하순은
+>       젖었다**(08-19·08-31 rel 127, 낙동강·영산강 80~160 mm).
+> - [ ] **SAR ↔ WAMIS 저수량 대조를 v10 으로** — `sar_vs_wamis_storage --sar-csv <gee v10 저수지 CSV> --tag v10`.
+>       도구는 준비됐다(10-12, v9 = gee `reservoir_km2_1to1.csv` 재현 확인). **gee 가 v10 저수지 CSV 파일명을
+>       알려주면 돌린다.** 포스터의 "SAR 면적 변화 = 저수량 변화의 하한" 주장 확인용.
+> - [ ] **gee: 하루 두 궤도 3건이 날짜 단위 코드에서 빠진다** — 20250805(ASC127·DESC134 둘 다), 20250811
+>       DESC134, 20260714 ASC127. 모든 일자 비교(포스터) 전에 gee `watershed_pairs.py`·`reservoir_series.py`
+>       를 (날짜, 궤도) 단위로 — gee 인계 HANDOFF_FROM_S1_20261005 §2-7.
 > - 교훈: [ISSUES #25](ISSUES_KR.md) — `ORBIT` 에만 넣고 `SAT` 를 빠뜨렸다.
 
 > ### 2026-10-06 갱신 — 아래 표 중 바뀐 것
