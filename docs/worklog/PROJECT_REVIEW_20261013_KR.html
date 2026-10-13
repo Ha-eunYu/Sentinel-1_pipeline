@@ -1,0 +1,314 @@
+<meta charset="utf-8">
+<title>2026 가뭄 SAR 리뷰</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* 레이아웃: 한 줄 읽기 열(최대 46rem) 보고서. 맨 위 진행 현황 띠, 그 아래 섹션이 차례로. 표와 일정도만 가로 스크롤 허용 */
+:root {
+  --bg: #f4f7f9;        /* 살짝 푸른 종이 */
+  --surface: #ffffff;
+  --ink: #15222c;
+  --muted: #5a6b78;
+  --line: #d6dfe5;
+  --accent: #1d5f8f;    /* 측량 도면의 파랑 */
+  --accent-soft: #e3eef6;
+  --warn: #a35f00;      /* 결정·주의 */
+  --warn-soft: #fbefdc;
+  --good: #2c7a4b;
+  --good-soft: #e3f2e8;
+  --font-text: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --step--1: 0.8125rem;
+  --step-0: 0.96875rem;
+  --step-1: 1.1875rem;
+  --step-2: 1.5rem;
+  --step-3: 2rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e161c; --surface: #142028; --ink: #e2e9ee; --muted: #93a4b0; --line: #26353f;
+    --accent: #79b6e3; --accent-soft: #17303f; --warn: #e3a64a; --warn-soft: #33260f;
+    --good: #72c595; --good-soft: #15301f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e161c; --surface: #142028; --ink: #e2e9ee; --muted: #93a4b0; --line: #26353f;
+  --accent: #79b6e3; --accent-soft: #17303f; --warn: #e3a64a; --warn-soft: #33260f;
+  --good: #72c595; --good-soft: #15301f; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-text); font-size: var(--step-0); line-height: 1.7;
+  margin: 0; padding-inline: 16px; padding-block: 2.5rem 4rem;
+  word-break: keep-all; overflow-wrap: break-word;
+}
+.page { max-width: 46rem; margin-inline: auto; display: grid; gap: 2.75rem; }
+header { display: grid; gap: 0.5rem; }
+.eyebrow { font-size: var(--step--1); letter-spacing: 0.06em; color: var(--accent); font-weight: 600; }
+h1 { font-size: var(--step-3); line-height: 1.25; margin: 0; font-weight: 700; text-wrap: balance; }
+h2 { font-size: var(--step-2); line-height: 1.3; margin: 0; font-weight: 600; text-wrap: balance; }
+.meta { color: var(--muted); font-size: var(--step--1); font-family: var(--font-data); }
+section { display: grid; gap: 1rem; min-width: 0; }
+p { margin: 0; max-width: 65ch; }
+.lead { font-size: var(--step-1); line-height: 1.6; }
+code, .num { font-family: var(--font-data); font-size: 0.92em; }
+code { background: var(--accent-soft); padding: 0.05em 0.35em; border-radius: 4px; }
+ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.35rem; }
+
+.status { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); background: var(--surface); border-radius: 10px; }
+.status > div { padding: 0.9rem 1rem; display: grid; gap: 0.15rem; min-width: 0; }
+.status > div + div { border-left: 1px solid var(--line); }
+.status .v { font-family: var(--font-data); font-size: var(--step-2); font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.status .v small { font-size: 0.55em; color: var(--muted); }
+.status .k { font-size: var(--step--1); color: var(--muted); }
+.status .ok .v { color: var(--good); }
+@media (max-width: 40rem) {
+  .status { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .status > div:nth-child(3) { border-left: 0; }
+  .status > div:nth-child(n+3) { border-top: 1px solid var(--line); }
+}
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: var(--step--1); line-height: 1.55; }
+th, td { text-align: left; vertical-align: top; padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font-weight: 600; color: var(--muted); background: var(--bg); white-space: nowrap; }
+td:first-child { white-space: nowrap; font-weight: 500; }
+td.wrap { white-space: normal; }
+.pass { color: var(--good); font-weight: 600; }
+.chip { display: inline-block; font-family: var(--font-data); font-size: 0.8rem; padding: 0.05rem 0.45rem; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+
+.callout { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 0.85rem 1rem; border-radius: 0 8px 8px 0; display: grid; gap: 0.5rem; }
+.callout strong { color: var(--warn); }
+.decide { list-style: none; padding: 0; display: grid; gap: 0.6rem; }
+.decide li { display: grid; grid-template-columns: 1.4rem 1fr; gap: 0.5rem; align-items: start; }
+.decide li::before { content: ""; width: 0.95rem; height: 0.95rem; margin-top: 0.35rem; border: 1.5px solid var(--warn); border-radius: 3px; }
+
+.fig { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 0.75rem; }
+.fig svg { display: block; width: 100%; min-width: 620px; height: auto; }
+.fig text { font-family: var(--font-text); }
+.t-name { fill: var(--ink); font-size: 12.5px; }
+.t-name.strong { font-weight: 700; }
+.t-date { fill: var(--muted); font-size: 11.5px; font-family: var(--font-data); }
+.t-date.strong { fill: var(--ink); font-weight: 600; }
+.t-tick { fill: var(--muted); font-size: 11px; font-family: var(--font-data); }
+.g-grid { stroke: var(--line); }
+.g-axis { stroke: var(--muted); stroke-width: 1.2; }
+.g-bar { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.2; }
+.g-mile { fill: var(--muted); }
+.g-key { fill: var(--accent); }
+.g-keyline { stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 4 4; }
+figcaption { font-size: var(--step--1); color: var(--muted); margin-top: 0.5rem; }
+footer { color: var(--muted); font-size: var(--step--1); border-top: 1px solid var(--line); padding-top: 1rem; display: grid; gap: 0.3rem; }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<main class="page">
+  <header>
+    <div class="eyebrow">S1 · gee 공동 작업 리뷰</div>
+    <h1>2026 여름 가뭄 Sentinel-1 프로젝트 리뷰</h1>
+    <div class="meta">기준 2026-10-13 13:00 KST · 기간 10-05 ~ 10-13</div>
+  </header>
+
+  <div class="status" role="list" aria-label="진행 현황">
+    <div role="listitem" class="ok"><span class="v">3<small> / 3</small></span><span class="k">EGM 판정 통과</span></div>
+    <div role="listitem"><span class="v">24<small> / 83</small></span><span class="k">EGM 재처리(장)</span></div>
+    <div role="listitem"><span class="v">6<small> / 29</small></span><span class="k">EGM 판 모자이크</span></div>
+    <div role="listitem"><span class="v">10-22</span><span class="k">포스터 발표 · D-9</span></div>
+  </div>
+
+  <section aria-labelledby="s-sum">
+    <h2 id="s-sum">요약</h2>
+    <p class="lead">8월 10일 이후 만든 Sentinel-1 RTC 전부가 위성 쪽으로 30~50 m 밀려 있었다. 원인은 외부 DEM(COP30)을 쓸 때 EGM 보정을 끈 설정이다. 시험 처리에서 세 판정을 모두 통과해 원인을 확정했고, 10-12 21:32부터 EGM을 켠 83장 재처리를 진행 중이다.</p>
+    <ul>
+      <li>포스터 설계는 확정됐다. 같은 위성 1:1 쌍(v11)을 본문에 두고, 그 옆에 8월 하강궤도 S1C↔S1C 민감도 4쌍을 쌍별로 나란히 싣는다.</li>
+      <li>포스터 수치는 아직 하나도 확정되지 않았다. 확정본은 gee가 EGM 판 영상으로 계산하는 v11이다.</li>
+      <li>초록의 7월 수치(8개 유역 −0.6~−18.5%)는 바뀐다. 5곳의 비교 쌍이 바뀌고, 위치 보정 효과도 더해진다.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="s-goal">
+    <h2 id="s-goal">목표와 일정</h2>
+    <p>2026년 7·8월 남부 가뭄을 Sentinel-1/2로 분석해 전년도(2025)와 비교한다. 연구 질문은 "해마다 오는 여름 폭우(2025) 대 이례적인 여름 가뭄(2026)"이다.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>항목</th><th>날짜</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td>추계 원격탐사학회 포스터</td><td class="num">2026-10-22</td><td class="wrap">본문 = v11 고정 쌍 + 8월 민감도 4쌍</td></tr>
+        <tr><td>KJRS 논문 마감</td><td class="num">2026-11-05</td><td class="wrap">같은 v11 수치를 쓴다</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="s-egm">
+    <h2 id="s-egm">EGM 위치 오류 판정</h2>
+    <p>판정 기준은 결과보다 먼저 적었다. 시험 영상은 2026-07-14 상승 <code>376D</code>와 하강 <code>B126</code>이다. 12시간 차이로 찍혔고 강우가 거의 없었다. 화소는 10 m, 열은 경도 방향 약 8 m다.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>판정</th><th>v10 (EGM 끔)</th><th>EGM 켬</th><th>결과</th></tr></thead>
+      <tbody>
+        <tr><td class="wrap">① 같은 날 상승↔하강 수체 마스크 어긋남 (담수호 9곳)</td><td class="num">−8 화소</td><td class="num">−1 화소</td><td class="pass">통과</td></tr>
+        <tr><td class="wrap">보조: v10 → EGM 판 이동</td><td>—</td><td class="num">상승 +4 · 하강 −4</td><td class="pass">예측 일치</td></tr>
+        <tr><td class="wrap">② 호소 폴리곤 이동 시 면적 최대 지점 (8~9곳)</td><td class="num">상승 −4 · 하강 +6 열</td><td class="num">상승 −1 · 하강 +1 열</td><td class="pass">통과</td></tr>
+      </tbody>
+    </table></div>
+    <p>v10은 상승궤도가 서쪽, 하강궤도가 동쪽으로, 각각 위성 쪽으로 밀려 있었다. 호소 폴리곤으로 자른 면적은 1.5~5.4% 작게 나왔고, EGM 판에서는 0~0.9%로 줄었다.</p>
+  </section>
+
+  <section aria-labelledby="s-log">
+    <h2 id="s-log">진행 경과</h2>
+    <p>10-12 오후가 전환점이다. v10 저수지 값을 대조하다가 EGM 위치 오류를 찾았고, 그때부터 재처리와 v11로 방향을 바꿨다.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>날짜</th><th>한 일</th></tr></thead>
+      <tbody>
+        <tr><td class="num">10-13</td><td class="wrap">판정 ②를 S1이 직접 재 통과. 틀린 EGM 안내 4곳 정정. 8월 A·B군, 7월 A군 모자이크를 EGM 판으로 교체. gee-4c가 v11 착수(메모리 창을 위해 L1 레인 정지). 촬영 모니터링 예약 중지</td></tr>
+        <tr><td class="num">10-12 저녁</td><td class="wrap">EGM 시험 2장 판정 ① 통과. 21:32 EGM 켬 81장 재처리 시작. v10 2단계 35장 NAS 이동</td></tr>
+        <tr><td class="num">10-12 오후</td><td class="wrap">v10 산출(v9와 유역 Δ% 차이 ≤ 0.7%p). SAR–WAMIS v10 16/16 하한 성립. 7월 저수지 차이를 추적하다 EGM 문제 발견</td></tr>
+        <tr><td class="num">10-12 정오</td><td class="wrap">포스터 설계 재결정: 여러 날 집계 없이 1:1 쌍 + 민감도 4쌍. 7월 쌍 일부 변경(하강 12개 유역, 접경 2행, 동부 4곳)</td></tr>
+        <tr><td class="num">10-12 오전</td><td class="wrap">WAMIS 담수호 21곳 수집 복구. 관측 29개 강우 주석. 하루 두 궤도 3건을 gee에서 날짜·궤도 단위로 수정. 죽은 모자이크 24개 정리</td></tr>
+        <tr><td class="num">10-11</td><td class="wrap">정밀궤도(POEORB) 재처리 83/83 완료, 모자이크 29개 재작성. rel 61은 진행하지 않기로 함</td></tr>
+        <tr><td class="num">10-07</td><td class="wrap">블루스크린(메모리 압박 때). 덤프 진단은 아직 안 함</td></tr>
+        <tr><td class="num">10-06</td><td class="wrap">2025 비교일 일부가 폭우 직후임을 강우로 확인. 용어를 "전년도"로</td></tr>
+        <tr><td class="num">10-05</td><td class="wrap">가뭄 리뷰: SAR 면적이 공식 저수량 감소를 덜 잡음, 2025는 평년이 아님, SWOT 수위 사용 가능. 정밀궤도 재처리 착수</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="s-now">
+    <h2 id="s-now">현재 상태 (10-13 13:00)</h2>
+    <p>포스터용 48장 중 22장을 끝냈다. 포스터용은 10-14 오전~낮, 전체는 10-15에 끝난다.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>항목</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>EGM 재처리</td><td class="wrap">24/83장, 실패 0. 장당 58~118분. 지금은 L2 레인 하나, L1은 gee 계산 동안 멈춤</td></tr>
+        <tr><td>EGM 판 모자이크</td><td class="wrap">6/29 — 8월 A군(0802↔0806), 8월 B군(0807↔0811), 7월 A군(0715↔0725)</td></tr>
+        <tr><td>gee v11</td><td class="wrap">gee-4c 담당. 1단계 쌍 파일 <code>watershed_pairs_v11.json</code> 완료(궤도 키 6개). 2단계 8월 B군 진행 중</td></tr>
+        <tr><td>메모리</td><td class="wrap">레인 2개면 여유 1.5~4 GB. gpt당 최대 13 GB로 제한하고, 큰 계산은 레인을 멈춘 "창"에서 돌린다</td></tr>
+        <tr><td>디스크</td><td class="wrap">E: 여유 184 GB(재처리에 충분), F: 29 GB</td></tr>
+        <tr><td>보관</td><td class="wrap">v10 2단계 RTC 35장은 NAS <code>v10_poeorb_egmoff_20261012</code>로 이동(크기 대조 후)</td></tr>
+        <tr><td>깃</td><td class="wrap">S1 <code>91d687b</code>, 원격보다 26커밋 앞섬(푸시 전). gee <code>775d19d</code></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="s-dec">
+    <h2 id="s-dec">확정된 결정</h2>
+    <p>비교는 같은 위성·같은 상대궤도의 1:1 쌍으로만 하고, 여러 날을 평균이나 중앙값으로 묶지 않는다.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>항목</th><th>결정</th></tr></thead>
+      <tbody>
+        <tr><td>비교 대상</td><td class="wrap">전년도(2025) ↔ 2026, 7·8월. 9월 제외</td></tr>
+        <tr><td>처리 규격</td><td class="wrap">VH · Frost · <code>korea_peninsula_cop30</code> · 정밀궤도 · <strong>EGM 켬</strong>(10-12 확정)</td></tr>
+        <tr><td>쌍 기준</td><td class="wrap">같은 위성 기본, rel 127은 같은 궤도면 됨(1C↔1D). 저수지를 가장 많이 덮는 촬영. 7·8월 따로</td></tr>
+        <tr><td>7월 쌍</td><td class="wrap"><span class="chip">ASC54</span> 0725↔0715(접경 포함) · <span class="chip">DESC134</span> 0718↔0720</td></tr>
+        <tr><td>8월 쌍</td><td class="wrap">A군 <span class="chip">ASC54</span> 0806↔0802 · B군 <span class="chip">ASC127</span> 0811↔0807(1C↔1D) · 한강 <span class="chip">ASC54</span> 0812↔0802(1A↔1D, 커버 우선)</td></tr>
+        <tr><td>포스터 본문</td><td class="wrap">v11 1:1 쌍 + 8월 <span class="chip">DESC134</span> S1C 민감도 4쌍(0811·0823 × 0813·0825, 안동·임하·옥정·평림)</td></tr>
+        <tr><td>강우</td><td class="wrap">걸러내는 기준이 아니라 해석용 주석(촬영 직전 5일 WAMIS 강우)</td></tr>
+        <tr><td>제외</td><td class="wrap">rel 32(짝 없음) · rel 61 · 여러 날 집계 · 한강유역 밖 북한 9장 · 0707·0714·0712·0726·0731 쌍</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="s-issue">
+    <h2 id="s-issue">발견한 문제와 교훈</h2>
+    <p>가장 큰 문제는 근거 없는 사양 한 줄("COP30은 이미 타원체고")이었다. 바다 화소 하나만 찍어 봤으면 8월에 끝났을 문제다.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>문제</th><th>영향</th><th>조치</th></tr></thead>
+      <tbody>
+        <tr><td class="wrap">COP30 높이를 타원체고로 알고 EGM을 끔 (ISSUES #26)</td><td class="wrap">8-10 이후 RTC가 위성 쪽으로 30~50 m 밀림. 폴리곤으로 자른 면적 1.5~5.4% 과소</td><td class="wrap">EGM 켬 재처리. 예전 근거(NGII 대조)는 거꾸로 읽은 것이었다</td></tr>
+        <tr><td class="wrap">하루 두 궤도인 날을 날짜로만 불러 관측 4개 누락</td><td class="wrap">하강134 2025 관측이 4일에서 2일로</td><td class="wrap">gee가 날짜·궤도 단위로 수정, v11은 전 회차 <code>--force-o</code></td></tr>
+        <tr><td class="wrap">v8 쌍 고르기가 커버만 보고 위성이 다른 날을 고름</td><td class="wrap">초록이 인용한 유역 수치가 "동일 위성" 문구와 다름</td><td class="wrap">같은 위성 우선으로 변경</td></tr>
+        <tr><td class="wrap">이전 보고서가 같은 유역에 2025 기준일을 둘 씀</td><td class="wrap">유역 표 0707(폭우 전) · 저수지 표 0725(폭우 후)</td><td class="wrap">0725로 통일, 폭우 직후 기준일임을 주석</td></tr>
+        <tr><td class="wrap">gpt 둘 × 최대 22 GB</td><td class="wrap">10-07 블루스크린, 10-12 여유 170 MB까지</td><td class="wrap">gpt당 13 GB 제한, 큰 계산은 레인을 멈춘 창에서</td></tr>
+        <tr><td class="wrap">짝을 이루는 표 둘 중 하나만 고침 (ISSUES #25)</td><td class="wrap">gee 산출 중단</td><td class="wrap">도구가 두 표를 함께 대조</td></tr>
+        <tr><td class="wrap">인계에 적은 gee 명령이 그대로 안 돌았음</td><td class="wrap"><code>--only-obs</code> 미배선</td><td class="wrap">gee-4c가 고침(gee <code>5dc1500</code>)</td></tr>
+      </tbody>
+    </table></div>
+    <p>이번 작업 중 결론을 두 번 뒤집었다("v10이 맞다" → "v9 7월이 제자리"). 그 뒤로는 판정 기준을 결과보다 먼저 적고 진행했다.</p>
+  </section>
+
+  <section aria-labelledby="s-num">
+    <h2 id="s-num">수치 상태</h2>
+    <p>포스터에 바로 인용할 수 있는 것은 강우 주석과 WAMIS 공식 저수량뿐이다. SAR 수치는 모두 v11을 기다린다.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>수치</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td class="wrap">강우 주석(관측 29개) · WAMIS 공식 저수량 · EGM 원인</td><td class="pass">확정</td></tr>
+        <tr><td class="wrap">v10 유역·저수지 값</td><td class="wrap">쓰지 않음(EGM 끈 판, 비교용으로만 보관)</td></tr>
+        <tr><td class="wrap">"SAR 면적 변화는 저수량 변화의 하한"</td><td class="wrap">v10에서 16/16 성립(k_eff 1.62~21.2). v11로 다시 잰다. 차이가 커서 유지될 가능성이 크다</td></tr>
+        <tr><td class="wrap">초록 "7월 8개 유역 모두 감소(−0.6~−18.5%)"</td><td class="wrap">바뀐다. 5곳의 쌍이 바뀌고(0707 4곳, 섬진강 0714) EGM 효과도 더해진다</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout">
+      <p><strong>2025 기준일이 폭우 직후다.</strong> 2025 기준일을 07-25로 통일하면 동부 저수지의 2025 수위가 07-07보다 1.5~9.6 m 높아서 7월 감소율이 커진다(예: 영천 −0.6% → −15% 안팎). 포스터에 이 점을 밝힌다.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-plan">
+    <h2 id="s-plan">남은 일과 일정</h2>
+    <p>포스터용 48장이 10-14에 끝나면 gee가 v11과 민감도 4쌍을 내고, 10-15부터 수치를 갱신해 10-17부터 포스터를 만든다. 나머지 33장은 포스터와 무관하게 10-15에 끝난다.</p>
+    <figure class="fig" style="margin:0">
+      <svg viewBox="0 0 800 292" role="img" aria-label="남은 일 일정: 포스터용 재처리 10-14, v11 10-15, 포스터 발표 10-22, KJRS 마감 11-05">
+        <g>
+          <line class="g-grid" x1="210" x2="210" y1="58" y2="276"/>
+          <line class="g-grid" x1="368.2" x2="368.2" y1="58" y2="276"/>
+          <line class="g-grid" x1="526.4" x2="526.4" y1="58" y2="276"/>
+          <line class="g-grid" x1="684.6" x2="684.6" y1="58" y2="276"/>
+          <text class="t-tick" x="210" y="46" text-anchor="middle">10/13</text>
+          <text class="t-tick" x="368.2" y="46" text-anchor="middle">10/20</text>
+          <text class="t-tick" x="526.4" y="46" text-anchor="middle">10/27</text>
+          <text class="t-tick" x="684.6" y="46" text-anchor="middle">11/3</text>
+          <line class="g-axis" x1="210" x2="740" y1="58" y2="58"/>
+          <text class="t-tick" x="16" y="22">2026년, 10-13 기준 예상 · 막대 = 기간, 마름모 = 마감</text>
+        </g>
+        <line class="g-keyline" x1="413.4" x2="413.4" y1="58" y2="276"/>
+        <text class="t-name" x="16" y="84">포스터용 재처리 48장</text>
+        <rect class="g-bar" x="210" y="74" width="22.6" height="12" rx="6"/>
+        <text class="t-date" x="246.6" y="84">10/13–10/14</text>
+        <text class="t-name" x="16" y="110">gee v11 (고정 쌍·민감도)</text>
+        <rect class="g-bar" x="210" y="100" width="45.2" height="12" rx="6"/>
+        <text class="t-date" x="269.2" y="110">10/13–10/15</text>
+        <text class="t-name" x="16" y="136">나머지 재처리 33장</text>
+        <rect class="g-bar" x="232.6" y="126" width="22.6" height="12" rx="6"/>
+        <text class="t-date" x="269.2" y="136">10/14–10/15</text>
+        <text class="t-name" x="16" y="162">SAR–WAMIS v11 재대조</text>
+        <rect class="g-bar" x="232.6" y="152" width="22.6" height="12" rx="6"/>
+        <text class="t-date" x="269.2" y="162">10/14–10/15</text>
+        <text class="t-name" x="16" y="188">초록·포스터 수치 갱신</text>
+        <rect class="g-bar" x="255.2" y="178" width="45.2" height="12" rx="6"/>
+        <text class="t-date" x="314.4" y="188">10/15–10/17</text>
+        <text class="t-name" x="16" y="214">포스터 제작</text>
+        <rect class="g-bar" x="300.4" y="204" width="90.4" height="12" rx="6"/>
+        <text class="t-date" x="290" y="214" text-anchor="end">10/17–10/21</text>
+        <text class="t-name strong" x="16" y="240">포스터 발표</text>
+        <path class="g-key" d="M413.4 228l8 8l-8 8l-8 -8z"/>
+        <text class="t-date strong" x="427" y="240">10/22</text>
+        <text class="t-name" x="16" y="266">KJRS 논문 마감</text>
+        <path class="g-mile" d="M729.8 254l8 8l-8 8l-8 -8z"/>
+        <text class="t-date" x="744" y="266">11/5</text>
+      </svg>
+      <figcaption>날짜 축은 실제 간격대로 그렸다(하루 ≈ 22.6 단위). 점선은 포스터 발표일.</figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="s-open">
+    <h2 id="s-open">결정이 필요한 사항과 위험</h2>
+    <p>일정 여유는 충분하다(재처리가 10-15에 끝나도 포스터까지 약 1주). 정해야 할 것은 세 가지다.</p>
+    <ul class="decide">
+      <li>폭우 전 날짜(07-07) 보조 수치를 포스터에 한 줄 넣을지. 위성이 달라(S1A) 본문 기준에서는 빠진다</li>
+      <li>포스터용 48장의 v10 판(E:, 약 120 GB)을 검증 후 NAS로 옮길지 지울지</li>
+      <li>S1 저장소 푸시(26커밋)</li>
+    </ul>
+    <ul>
+      <li><strong>메모리</strong>: 레인 2개와 gee의 큰 유역(한강 격자 22,095×29,981) 계산이 겹치면 블루스크린 위험. "창" 운영으로 갈라 돌린다</li>
+      <li><strong>초록 수치 변화 폭</strong>: 같은 위성 기준과 폭우 후 기준일로 7월 감소율이 커진다. 해석 문구를 미리 맞춘다</li>
+      <li><strong>세션 간 연락</strong>: gee 세션이 바뀌면 메시지가 안 닿는다. 인계는 gee <code>docs/HANDOFF_FROM_S1_20261005_KR.md</code> §2-8, 모자이크 교체 목록은 S1 <code>temp/egm_vrt_done.txt</code>가 기준</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>근거: S1 <code>docs/worklog/ISSUES_KR.md</code> #26 · <code>docs/drought/REVIEW_20261005_KR.md</code> · <code>docs/worklog/TODO_KR.md</code></span>
+    <span>같은 내용의 Markdown 판: <code>S1/docs/worklog/PROJECT_REVIEW_20261013_KR.md</code></span>
+  </footer>
+</main>
