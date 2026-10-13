@@ -65,8 +65,17 @@ SENS_PAIRS = (("20250811", "20260813"), ("20250811", "20260825"),
 SENS_REL, SENS_HOUR, SENS_SHIFT = "DESC134", 6, 1
 
 
+# 각 쌍 날짜의 상대궤도 — v11 의 by-orbit CSV 는 열이 `2025-07-25_ASC54` 처럼 궤도를 붙인다(gee 10-13).
+ORBIT_OF = {"20250725": "ASC54", "20260715": "ASC54", "20250806": "ASC54", "20260802": "ASC54",
+            "20250718": "DESC134", "20260720": "DESC134", "20250811": "ASC127", "20260807": "ASC127"}
+
+
 def sar_from_csv(path: Path) -> dict[str, tuple[float | None, ...]]:
-    """gee reservoir_series CSV -> {저수지: (DATES 순 4개 km² 또는 None)}."""
+    """gee reservoir_series CSV -> {저수지: (DATES 순 4개 km² 또는 None)}.
+
+    열 이름은 날짜 단위(`YYYY-MM-DD`, v9·v10)와 궤도 단위(`YYYY-MM-DD_ASC54`, v11 --by-orbit) 둘 다 읽는다.
+    궤도 단위가 있으면 그쪽을 먼저 본다 — 하루 두 궤도인 날(0811 등)에 엉뚱한 궤도를 집지 않게.
+    """
     with open(path, encoding="utf-8-sig", newline="") as fh:
         rows = {r["저수지"]: r for r in csv.DictReader(fh)}
     out = {}
@@ -74,7 +83,8 @@ def sar_from_csv(path: Path) -> dict[str, tuple[float | None, ...]]:
         r = rows.get(name, {})
         vals = []
         for d in DATES[grp]:
-            v = (r.get(f"{d[:4]}-{d[4:6]}-{d[6:]}") or "").strip()
+            iso = f"{d[:4]}-{d[4:6]}-{d[6:]}"
+            v = (r.get(f"{iso}_{ORBIT_OF[d]}") or r.get(iso) or "").strip()
             vals.append(float(v) if v else None)
         out[name] = tuple(vals)
     return out
