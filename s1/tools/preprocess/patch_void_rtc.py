@@ -145,8 +145,8 @@ def main() -> None:
                 local, OUT, polarization="VH",
                 external_dem_file=DEM.resolve(),
                 external_dem_nodata=-32768.0,
-                # COP30은 이미 타원체고 — EGM 보정을 걸면 이중 적용된다
-                external_dem_apply_egm=False,
+                # COP30 은 EGM2008 정표고(바다 0 m) — EGM 을 켜야 제자리다 (ISSUES #26, 10-13 정정)
+                external_dem_apply_egm=True,
                 aoi_wkt=info["wkt_4326"],       # ← 결측 bbox만 자른다
                 out_tag=tag)
             g.run(gpt_options=["-q", "8", "-c", args.gpt_c])
