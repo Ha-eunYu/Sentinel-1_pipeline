@@ -70,6 +70,9 @@
 >       먼저, 나머지 33장. 쌍이 끝나면 `python -m s1.tools.mosaic.rebuild_vrt_egm` → gee 통보(`temp/egm_vrt_done.txt`).
 >       10-13 12:2x 기준 EGM 판 VRT 6/29(8월 A·B군, 7월 A군). **L1 은 gee 메모리 창(v11 계산) 동안 멈춤** — gee-4c 가
 >       "창 닫아도 됨"을 보내면 `bash scripts/run_egm_queue.sh L1` 로 다시 켠다(07-18 줄은 대기열 맨 앞에 되돌려 둠).
+> - ⚠ **gpt 힙 9 GB 는 부족하다**(10-14) — L1 을 `GPT_XMX=9G` 로 돌린 밤에 Java heap space 로 8장 실패(0812 3·0823 4·0825 F8B2),
+>       0825 FB79 는 03:23 부터 멈춤. `--gpt-c 7G` 타일 캐시를 빼면 연산 여유가 2 GB 뿐이다. **최소 10 GB**(L2 10 GB 는 실패 0),
+>       기본 13 GB. 힙을 낮추려면 `--gpt-c` 도 같이 낮출 것(레인 스크립트는 돌고 있는 동안 고치지 말 것). 실패 줄은 재투입했다.
 > - [ ] **v11 (gee-4c 담당)** — by-orbit 쌍 파일 `watershed_pairs_v11.json` + 전 회차 `--force-o`(gee 인계 §2-8 보강).
 >       `reservoir_km2_v11.csv` 가 오면 `sar_vs_wamis_storage --sar-csv … --tag v11`, 민감도는 `--sens-csv`.
 > - [ ] **v10 2단계 RTC 35장 NAS 보관**(`X:\02_Analysis\Sentinel-1_Drought\v10_poeorb_egmoff_20261012\`) — 재처리·검증이
