@@ -64,9 +64,16 @@
 > - [x] **SAR ↔ WAMIS 저수량 대조를 v10 으로** — 10-12 완료(gee `reservoir_km2_v10.csv`). **16쌍 모두 하한
 >       성립**(k_eff 1.62~21.2). ~~7월 저수지 SAR 이 v9 와 다른 것은 DEM 때문~~ → **정정: v10 이 EGM 끔으로 30~50 m
 >       밀려 있다**(ISSUES #26). 수치는 EGM 판정 전 값 — REVIEW §2-1 v10 박스.
-> - [ ] 🔴 **EGM 시험 재처리 2장**(2026-07-14 A127 `376D` · D134 `B126`, `--dem-egm`) — 10-12 16:12 착수. 판정:
->       상승↔하강 dx 중앙값 v10 −8 → |dx| ≤ 1 이고 gee 폴리곤 시험 최대 0 화소면 확정 → **전체 재처리(v11)를
->       사용자에게 올린다**. 그 전까지 gee v10 나머지 회차는 멈춤(gee-61 합의).
+> - [x] **EGM 시험 재처리 2장**(2026-07-14 A127 `376D` · D134 `B126`, `--dem-egm`) — **세 판정 통과**(상승↔하강
+>       −8 → −1, v10→EGM ±4, 폴리곤 최대 상승 −4/하강 +6 → −1/+1). 원인 확정(ISSUES #26).
+> - [ ] 🔴 **EGM 켬 재처리 81장**(10-12 21:32~, `scripts/run_egm_queue.sh`, 대기열 `temp/egm_queue.txt`) — 포스터용 48장
+>       먼저, 나머지 33장. 쌍이 끝나면 `python -m s1.tools.mosaic.rebuild_vrt_egm` → gee 통보(`temp/egm_vrt_done.txt`).
+>       10-13 12:2x 기준 EGM 판 VRT 6/29(8월 A·B군, 7월 A군). **L1 은 gee 메모리 창(v11 계산) 동안 멈춤** — gee-4c 가
+>       "창 닫아도 됨"을 보내면 `bash scripts/run_egm_queue.sh L1` 로 다시 켠다(07-18 줄은 대기열 맨 앞에 되돌려 둠).
+> - [ ] **v11 (gee-4c 담당)** — by-orbit 쌍 파일 `watershed_pairs_v11.json` + 전 회차 `--force-o`(gee 인계 §2-8 보강).
+>       `reservoir_km2_v11.csv` 가 오면 `sar_vs_wamis_storage --sar-csv … --tag v11`, 민감도는 `--sens-csv`.
+> - [ ] **v10 2단계 RTC 35장 NAS 보관**(`X:\02_Analysis\Sentinel-1_Drought\v10_poeorb_egmoff_20261012\`) — 재처리·검증이
+>       끝나면 포스터용 48장의 v10 판(E: `rtc_grd_frost_vh_poeorb_*`)도 처분을 정한다(사용자 결정).
 > - [x] **gee: 하루 두 궤도 3건이 날짜 단위 코드에서 빠진다** — 20250805(ASC127·DESC134 둘 다), 20250811
 >       DESC134, 20260714 ASC127. gee 가 (날짜, 궤도) 단위로 고쳤다(`5b34603`), 죽은 키는 `RETIRED` 로(`a913aa5`).
 > - ✅ **10-12 재결정(사용자) — 모든 일자 집계는 하지 않는다.** 포스터 본문 = v10 1:1 쌍 + **8월 DESC134
