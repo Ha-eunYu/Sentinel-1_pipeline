@@ -101,7 +101,7 @@ Read → Apply-Orbit-File → ThermalNoiseRemoval → Calibration(Beta0)
 | **편파** | **VH** | GEE 수체탐지와 정합. VV 대비 물/육지 대비가 안정적이고 풍파에 덜 민감. VV와는 약 6 dB 오프셋이라 **절대 섞지 않는다** |
 | **Speckle 필터** | **Frost** (SNAP 기본 3×3, damping 2.0) | VV·VH 양쪽에서 검증(3절) |
 | **DEM** | **external `korea_peninsula_cop30.tif`** | 1절 |
-| EGM 지오이드 보정 | **켜기(`--dem-egm`)** — 2026-10-12 확정(ISSUES #26) | COP30 은 바다가 0.00 m 인 EGM2008 **정표고**다. 끄면(8-10~10-12 판) 영상이 센서 쪽으로 30~50 m 밀린다. 시험 3판정 통과(상승↔하강 −8 → −1화소, 폴리곤 최대 −4·+6 → −1·+1) |
+| EGM 지오이드 보정 | **켜기(`--dem-egm`)** — 2026-10-12 확정(ISSUES #26) | COP30 은 바다가 0.00 m 인 EGM2008 **정표고**다. 끄면(8-03~10-12 판) 영상이 센서 쪽으로 30~50 m 밀린다. 시험 3판정 통과(상승↔하강 −8 → −1화소, 폴리곤 최대 −4·+6 → −1·+1) |
 | 궤도 | Sentinel Precise (Auto Download), polyDegree 3, `continueOnFail=false` | 예측궤도는 수십 m 오차. ⚠ **`continueOnFail=false`는 POEORB 강제가 아니다** — POEORB가 없으면 SNAP이 조용히 **RESORB로 대체**하고 정상 종료한다(2-2절) |
 | 열잡음 제거 | `removeThermalNoise=true` | 수체는 저후방산란이라 열잡음 비중이 크다 |
 | 캘리브레이션 | **Beta0만** 출력 | Terrain-Flattening 입력 요건 |
@@ -110,13 +110,14 @@ Read → Apply-Orbit-File → ThermalNoiseRemoval → Calibration(Beta0)
 | 좌표계 | EPSG:4326 | |
 | 출력 | dB, GeoTIFF-BigTIFF | |
 | gpt 옵션 | `-q 8 -c 14G` (단독) / `-c 7G` (배치 2개 병렬) | gpt가 1코어 남짓만 써서 병렬이 유리. RAM 32 GB를 넘기지 않게 캐시를 나눈다 |
+| gpt 힙(`-Xmx`) | 13 GB 기본, **최소 10 GB** (`-c 7G` 일 때) | **힙 − 타일 캐시 = 연산 여유.** 9 GB 힙에 7 GB 캐시면 2 GB 만 남아 Java heap space 로 죽는다(10-14 밤 8장 실패). 힙을 낮추려면 `-c` 도 같이 낮춘다 |
 
 ### 실행
 
 ```bash
 conda run -n s1_snappy python -m s1.tools.preprocess.batch_grd_rtc_frost \
     --month 202608 --pol VH --out-dir downloads/rtc_grd_frost_vh --out-tag _vh \
-    --dem downloads/dem_basin/korea_peninsula_cop30.tif --gpt-c 7G --oldest-first
+    --dem downloads/dem_basin/korea_peninsula_cop30.tif --dem-egm --gpt-c 7G --oldest-first
 ```
 
 기존 산출물을 **다시 구울 때**는 배치가 건너뛰므로 삭제 후 재실행한다:
