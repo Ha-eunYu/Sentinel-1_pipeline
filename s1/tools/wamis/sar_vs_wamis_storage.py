@@ -20,7 +20,7 @@ SAR 면적은 어디서 오나 (2026-10-12)
     python -m s1.tools.wamis.sar_vs_wamis_storage --sar-csv ... --dry-run  # WAMIS 없이 면적만
     python -m s1.tools.wamis.sar_vs_wamis_storage --sens-csv <gee>/output/reservoir_km2_d134_sens.csv  # 8월 D134 민감도 4쌍
 
-``--sar-csv`` 에 ``2025-08-12_ASC54`` 열이 있으면 A군 6곳에 **8월 건조 대조**(0812→0802) 줄이
+``--sar-csv``(또는 ``--dry-csv``)에 ``2025-08-12_ASC54`` 열이 있으면 A군 6곳에 **8월 건조 대조**(0812→0802) 줄이
 본 8월 쌍 바로 아래 붙는다(아래 ``DRY_A``).
 
 산출: ``experiments/swot_wamis/sar_vs_wamis_{tag}.csv``.
@@ -151,6 +151,9 @@ def main() -> None:
     ap.add_argument("--sar-csv", type=Path, help="gee reservoir_series --csv 산출 (없으면 v9 보고서 값)")
     ap.add_argument("--sens-csv", type=Path,
                     help="8월 DESC134 민감도 4쌍 CSV(gee reservoir_km2_d134_sens.csv) — 이 모드만 돈다")
+    ap.add_argument("--dry-csv", type=Path,
+                    help="8월 A군 건조 대조 열(2025-08-12_ASC54·2026-08-02_ASC54)이 따로 든 CSV "
+                         "(gee reservoir_km2_v11_dry0812.csv). 없으면 --sar-csv 에서 찾는다")
     ap.add_argument("--tag", help="산출 파일 꼬리표 (기본: v9 또는 CSV 이름)")
     ap.add_argument("--dry-run", action="store_true", help="WAMIS 를 부르지 않고 SAR 면적·변화율만 찍는다")
     a = ap.parse_args()
@@ -186,7 +189,8 @@ def main() -> None:
         print(f"⚠ 면적 없음(그 쌍은 비운다): {', '.join(missing)}")
 
     dry_lakes = [n for n, (_, g) in DAMS.items() if g == "A"]
-    dry = by_orbit(a.sar_csv, dry_lakes, DRY_A, DRY_REL) if a.sar_csv else {}
+    dry_src = a.dry_csv or a.sar_csv
+    dry = by_orbit(dry_src, dry_lakes, DRY_A, DRY_REL) if dry_src else {}
     if dry and not any(dry[n][DRY_A[0]] for n in dry_lakes):
         print(f"(건조 대조 없음 — CSV 에 {DRY_A[0][:4]}-{DRY_A[0][4:6]}-{DRY_A[0][6:]}_{DRY_REL} 열이 비었다)")
         dry = {}
