@@ -114,9 +114,23 @@ def by_orbit(path: Path, lakes, days, rel: str) -> dict[str, dict[str, float | N
     return out
 
 
-def sens_from_csv(path: Path) -> dict[str, dict[str, float | None]]:
-    """민감도 CSV -> {저수지: {YYYYMMDD: km² 또는 None}} (열 `YYYY-MM-DD_DESC134`)."""
-    return by_orbit(path, SENS_LAKES, sorted({d for p in SENS_PAIRS for d in p}), SENS_REL)
+def sens_from_csv(paths: list[Path]) -> dict[str, dict[str, float | None]]:
+    """민감도 CSV(여럿) -> {저수지: {YYYYMMDD: km² 또는 None}} (열 `YYYY-MM-DD_DESC134`).
+
+    gee 는 쌍이 EGM 판으로 갖춰지는 대로 파일을 따로 낸다(10-14: ``_d134_0811`` · ``_sens_0823``).
+    같은 관측(예: 2026-08-13)이 두 파일에 다 있으면 값이 같아야 한다 — 다르면 멈춘다.
+    """
+    days = sorted({d for p in SENS_PAIRS for d in p})
+    out: dict[str, dict[str, float | None]] = {n: {d: None for d in days} for n in SENS_LAKES}
+    for path in paths:
+        for name, vals in by_orbit(path, SENS_LAKES, days, SENS_REL).items():
+            for d, v in vals.items():
+                if v is None:
+                    continue
+                if out[name][d] is not None and abs(out[name][d] - v) > 1e-3:
+                    raise SystemExit(f"[중단] {name} {d}: 파일마다 면적이 다르다 ({out[name][d]} ≠ {v}, {path.name})")
+                out[name][d] = v
+    return out
 
 
 @functools.lru_cache(maxsize=None)
@@ -149,8 +163,8 @@ def compare(name: str, lab: str, r0: dict, r1: dict, a0: float | None, a1: float
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--sar-csv", type=Path, help="gee reservoir_series --csv 산출 (없으면 v9 보고서 값)")
-    ap.add_argument("--sens-csv", type=Path,
-                    help="8월 DESC134 민감도 4쌍 CSV(gee reservoir_km2_d134_sens.csv) — 이 모드만 돈다")
+    ap.add_argument("--sens-csv", type=Path, nargs="+",
+                    help="8월 DESC134 민감도 4쌍 CSV(여럿 가능, 관측 열을 합친다) — 이 모드만 돈다")
     ap.add_argument("--dry-csv", type=Path,
                     help="8월 A군 건조 대조 열(2025-08-12_ASC54·2026-08-02_ASC54)이 따로 든 CSV "
                          "(gee reservoir_km2_v11_dry0812.csv). 없으면 --sar-csv 에서 찾는다")
@@ -162,8 +176,8 @@ def main() -> None:
             "SAR_dA_pct", "WAMIS_dV_pct", "k_eff"]]
     if a.sens_csv:
         sens = sens_from_csv(a.sens_csv)
-        tag = a.tag or a.sens_csv.stem
-        print(f"민감도 4쌍 ({SENS_REL}) SAR 면적: {a.sens_csv}")
+        tag = a.tag or a.sens_csv[0].stem
+        print(f"민감도 4쌍 ({SENS_REL}) SAR 면적: {', '.join(p.name for p in a.sens_csv)}")
         for name in SENS_LAKES:
             cd = DAMS[name][0]
             for d0, d1 in SENS_PAIRS:
