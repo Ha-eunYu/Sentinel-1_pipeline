@@ -20,6 +20,9 @@ SAR 면적은 어디서 오나 (2026-10-12)
     python -m s1.tools.wamis.sar_vs_wamis_storage --sar-csv ... --dry-run  # WAMIS 없이 면적만
     python -m s1.tools.wamis.sar_vs_wamis_storage --sens-csv <gee>/output/reservoir_km2_d134_sens.csv  # 8월 D134 민감도 4쌍
 
+``--sar-csv`` 에 ``2025-08-12_ASC54`` 열이 있으면 A군 6곳에 **8월 건조 대조**(0812→0802) 줄이
+본 8월 쌍 바로 아래 붙는다(아래 ``DRY_A``).
+
 산출: ``experiments/swot_wamis/sar_vs_wamis_{tag}.csv``.
 
 성덕(2002111)·동복은 2026-10 현재 mn_dammain 목록에서 빠졌지만 코드로는 자료가
@@ -64,6 +67,13 @@ SENS_PAIRS = (("20250811", "20260813"), ("20250811", "20260825"),
               ("20250823", "20260813"), ("20250823", "20260825"))
 SENS_REL, SENS_HOUR, SENS_SHIFT = "DESC134", 6, 1
 
+# 8월 A군 건조 대조 (2026-10-14 사용자 결정). 본쌍 2025 쪽 0806 은 낙동강 댐 5일 강우 42~119 mm 직후다
+# (data/rain_phase_5d_dam.csv). 같은 ASC54 트랙의 0812(S1A, KST 18:23)는 안동·임하·영천·성덕 4~18 mm 라
+# 2025 쪽만 바꾼 1:1 쌍을 본쌍 옆에 나란히 둔다 — 집계하지 않는다. 밀양·운문은 0812 도 55~82 mm(덜 젖었을 뿐).
+# 0812(S1A)↔0802(S1D) 는 교차 위성이지만 본쌍 0806(S1C)↔0802 도 교차라 기준이 새로 생기지 않는다.
+# gee 열 이름 `2025-08-12_ASC54` 가 --sar-csv 에 있을 때만 돈다.
+DRY_A, DRY_REL = ("20250812", "20260802"), "ASC54"
+
 
 # 각 쌍 날짜의 상대궤도 — v11 의 by-orbit CSV 는 열이 `2025-07-25_ASC54` 처럼 궤도를 붙인다(gee 10-13).
 ORBIT_OF = {"20250725": "ASC54", "20260715": "ASC54", "20250806": "ASC54", "20260802": "ASC54",
@@ -90,19 +100,23 @@ def sar_from_csv(path: Path) -> dict[str, tuple[float | None, ...]]:
     return out
 
 
-def sens_from_csv(path: Path) -> dict[str, dict[str, float | None]]:
-    """민감도 CSV -> {저수지: {YYYYMMDD: km² 또는 None}} (열 `YYYY-MM-DD_DESC134`)."""
+def by_orbit(path: Path, lakes, days, rel: str) -> dict[str, dict[str, float | None]]:
+    """궤도 단위 CSV -> {저수지: {YYYYMMDD: km² 또는 None}} (열 `YYYY-MM-DD_<rel>`)."""
     with open(path, encoding="utf-8-sig", newline="") as fh:
         rows = {r["저수지"]: r for r in csv.DictReader(fh)}
-    days = sorted({d for p in SENS_PAIRS for d in p})
     out = {}
-    for name in SENS_LAKES:
+    for name in lakes:
         r = rows.get(name, {})
         out[name] = {}
         for d in days:
-            v = (r.get(f"{d[:4]}-{d[4:6]}-{d[6:]}_{SENS_REL}") or "").strip()
+            v = (r.get(f"{d[:4]}-{d[4:6]}-{d[6:]}_{rel}") or "").strip()
             out[name][d] = float(v) if v else None
     return out
+
+
+def sens_from_csv(path: Path) -> dict[str, dict[str, float | None]]:
+    """민감도 CSV -> {저수지: {YYYYMMDD: km² 또는 None}} (열 `YYYY-MM-DD_DESC134`)."""
+    return by_orbit(path, SENS_LAKES, sorted({d for p in SENS_PAIRS for d in p}), SENS_REL)
 
 
 @functools.lru_cache(maxsize=None)
@@ -171,10 +185,20 @@ def main() -> None:
     if missing:
         print(f"⚠ 면적 없음(그 쌍은 비운다): {', '.join(missing)}")
 
+    dry_lakes = [n for n, (_, g) in DAMS.items() if g == "A"]
+    dry = by_orbit(a.sar_csv, dry_lakes, DRY_A, DRY_REL) if a.sar_csv else {}
+    if dry and not any(dry[n][DRY_A[0]] for n in dry_lakes):
+        print(f"(건조 대조 없음 — CSV 에 {DRY_A[0][:4]}-{DRY_A[0][4:6]}-{DRY_A[0][6:]}_{DRY_REL} 열이 비었다)")
+        dry = {}
+    dry_lab = f"8월 {DRY_A[0][4:]}→{DRY_A[1][4:]} 건조대조"
+
     if a.dry_run:
         for name, v in sar.items():
             pct = [f"{(v[i1] / v[i0] - 1) * 100:+.1f}%" if v[i0] and v[i1] else "-" for i0, i1 in ((0, 1), (2, 3))]
             print(f"  {name:6s} {v}  7월 {pct[0]}  8월 {pct[1]}")
+        for name, d in dry.items():
+            a0, a1 = d[DRY_A[0]], d[DRY_A[1]]
+            print(f"  {name:6s} {dry_lab}  {a0} → {a1}  " + (f"{(a1 / a0 - 1) * 100:+.1f}%" if a0 and a1 else "-"))
         return
 
     for name, (cd, grp) in DAMS.items():
@@ -182,6 +206,10 @@ def main() -> None:
         a_ = sar[name]
         for i0, i1, lab in [(0, 1, "7월"), (2, 3, "8월")]:
             row = compare(name, lab, vals[i0], vals[i1], a_[i0], a_[i1])
+            out.append(row)
+            print(row, flush=True)
+        if name in dry:   # 본 8월 쌍 바로 아래에 나란히
+            row = compare(name, dry_lab, at(cd, DRY_A[0], 18), vals[3], dry[name][DRY_A[0]], dry[name][DRY_A[1]])
             out.append(row)
             print(row, flush=True)
     write(out, tag)
