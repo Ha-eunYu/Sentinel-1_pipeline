@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
 """WAMIS 월자료(mn_mndata)로 8월 평균 저수위의 다년 순위 — 2025 가 '평년'이었나.
 
-    conda run -n s1_snappy python -m s1.tools.wamis.wamis_august_climatology
+    conda run -n s1_snappy python -m s1.tools.wamis.wamis_august_climatology          # 보고서 8곳, 8월
+    conda run -n s1_snappy python -m s1.tools.wamis.wamis_august_climatology --all    # 전국 댐, 7·8월 + 권역 요약
 
 월자료는 연도 범위를 넓게 주면 앞쪽이 잘려 온다(2006~ 요청에 2017-01 부터 118행).
 그래서 연도 구간을 나눠 받는다. 필드: obsymd(YYYYMM) · avwl(월평균 수위) 등.
+
+``--all`` (2026-10-14): mn_dammain 목록 + DELISTED(성덕·동복) 전부를 7·8월로 순위 낸다 →
+``data/wamis_rank_jul_aug.csv``. 권역 요약은 **조정지 댐을 뺀다**(수위를 일정하게 묶어 두는 댐이라
+가뭄 신호가 아니다). API 가 2017 이전을 주지 않아 순위는 사실상 10년(2017~2026) 기준이다.
 """
+import argparse
+import csv
+import statistics
 import sys
 from pathlib import Path
 
@@ -13,23 +21,74 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 sys.stdout.reconfigure(encoding="utf-8")
 from s1.wamis.client import rows  # noqa: E402
+from s1.wamis.dams import DELISTED, fetch_dams  # noqa: E402
 
 DAMS = {"안동호": "2001110", "임하호": "2002110", "밀양호": "2021110", "영천호": "2012210",
         "성덕저수지": "2002111", "운문호": "2021210", "옥정호": "4001110", "평림호": "5002201"}
+# 권역 요약 묶음 — mn_dammain 의 bbsnnm 값. 주암역조정지는 bbsnnm 이 비어 섬진강에 넣는다.
+GROUPS = {"한강": ("한강", "한강동해"), "금강": ("금강", "만경 · 동진"),
+          "낙동강·동남": ("낙동강", "형산강", "태화강", "회야 · 수영", "낙동강동해", "낙동강남해"),
+          "섬진강": ("섬진강", "섬진강남해", ""), "영산강·탐진": ("영산강", "탐진강")}
+OUT = ROOT / "data" / "wamis_rank_jul_aug.csv"
 
-for name, cd in DAMS.items():
-    aug = {}
-    for y0, y1 in [(2001, 2008), (2009, 2016), (2017, 2026)]:
+
+def monthly(cd: str, months: tuple[str, ...], spans=((2001, 2008), (2009, 2016), (2017, 2026))) -> dict:
+    """{(연, 'MM'): 월평균 수위} — months 에 든 달만."""
+    out = {}
+    for y0, y1 in spans:
         for r in rows("wkd", "mn_mndata", {"damcd": cd, "startyear": str(y0), "endyear": str(y1)}):
             ym = str(r.get("obsymd", ""))
-            if ym.endswith("08") and r.get("avwl") not in (None, "", "-"):
-                aug[int(ym[:4])] = float(r["avwl"])
-    yrs = sorted(aug)
-    if not yrs:
-        print(name, "자료 없음"); continue
-    vals = sorted(aug.values())
-    def rank(y):  # 낮은 쪽부터 몇 번째 (1 = 최저)
-        return vals.index(aug[y]) + 1 if y in aug else None
-    print(f"{name:6s} {yrs[0]}~{yrs[-1]} ({len(yrs)}년)  8월 평균수위 중앙값 {vals[len(vals)//2]:.2f}  "
-          f"2025={aug.get(2025, float('nan')):.2f} (낮은순 {rank(2025)}위)  "
-          f"2026={aug.get(2026, float('nan')):.2f} (낮은순 {rank(2026)}위)")
+            if len(ym) == 6 and ym[4:] in months and r.get("avwl") not in (None, "", "-"):
+                out[(int(ym[:4]), ym[4:])] = float(r["avwl"])
+    return out
+
+
+def rank_of(vals: dict[int, float], y: int) -> int | None:
+    """낮은 쪽부터 몇 번째 (1 = 최저)."""
+    srt = sorted(vals.values())
+    return srt.index(vals[y]) + 1 if y in vals else None
+
+
+def report8() -> None:
+    for name, cd in DAMS.items():
+        aug = {y: v for (y, m), v in monthly(cd, ("08",)).items()}
+        if not aug:
+            print(name, "자료 없음"); continue
+        yrs, vals = sorted(aug), sorted(aug.values())
+        print(f"{name:6s} {yrs[0]}~{yrs[-1]} ({len(yrs)}년)  8월 평균수위 중앙값 {vals[len(vals)//2]:.2f}  "
+              f"2025={aug.get(2025, float('nan')):.2f} (낮은순 {rank_of(aug, 2025)}위)  "
+              f"2026={aug.get(2026, float('nan')):.2f} (낮은순 {rank_of(aug, 2026)}위)")
+
+
+def report_all() -> None:
+    have = set()
+    table = []
+    for d in [*fetch_dams(), *DELISTED]:
+        if d.damcd in have:
+            continue
+        have.add(d.damcd)
+        mon = monthly(d.damcd, ("07", "08"), spans=((2009, 2016), (2017, 2026)))
+        row = {"권역": d.bbsnnm or "", "댐": d.damnm, "코드": d.damcd, "관리": d.mggvnm or ""}
+        for m in ("07", "08"):
+            vals = {y: v for (y, mm), v in mon.items() if mm == m}
+            row |= {f"{int(m)}월_년수": len(vals), f"{int(m)}월_2025순위": rank_of(vals, 2025),
+                    f"{int(m)}월_2026순위": rank_of(vals, 2026)}
+        table.append(row)
+        print(row, flush=True)
+    with open(OUT, "w", encoding="utf-8-sig", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(table[0]))
+        w.writeheader(); w.writerows(table)
+    print(f"-> {OUT.relative_to(ROOT)}\n\n권역 요약 (조정지 제외, 낮은 순 1 = 최저)")
+    for g, keys in GROUPS.items():
+        rs = [r for r in table if r["권역"] in keys and "조정지" not in r["댐"] and "(조)" not in r["댐"]]
+        for m in ("7월", "8월"):
+            a25 = [r[f"{m}_2025순위"] for r in rs if r[f"{m}_2025순위"]]
+            a26 = [r[f"{m}_2026순위"] for r in rs if r[f"{m}_2026순위"]]
+            print(f"  {g:8s} {m} n={len(rs):2d}  2025 중앙 {statistics.median(a25):4.1f} (≤3위 {sum(x <= 3 for x in a25):2d})"
+                  f"   2026 중앙 {statistics.median(a26):4.1f} (≤3위 {sum(x <= 3 for x in a26):2d})")
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--all", action="store_true", help="전국 댐 7·8월 순위 + 권역 요약 → data/wamis_rank_jul_aug.csv")
+    (report_all if ap.parse_args().all else report8)()
