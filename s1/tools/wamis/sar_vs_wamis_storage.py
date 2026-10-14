@@ -143,6 +143,37 @@ def at(damcd: str, day: str, hour: int) -> dict:
         or (f.rows[-1] if f.rows else {})
 
 
+@functools.lru_cache(maxsize=None)
+def month_mean(damcd: str, yyyymm: str) -> tuple[float | None, int]:
+    """그 달(KST) 시자료 저수량 평균과 쓴 시간 수. ``--monthly`` 사후 민감도 전용.
+
+    서버 습성(10-15 실측): 어떤 날은 ``YYYYMMDD24``(= 다음날 00시)까지 25줄이 오고, 같은 달을 다시 물으면
+    줄 수가 700~775 로 달라진다(청크 일부 누락). 그래서 **00~23시만** 세고, 쓴 시간 수를 열로 남긴다
+    (만 시간은 일수 × 24). 월평균은 시간 몇 개에 둔감하다.
+    """
+    y, m = int(yyyymm[:4]), int(yyyymm[4:])
+    last = (datetime(y + (m == 12), m % 12 + 1, 1) - timedelta(days=1)).day
+    f = series.hourly(damcd, f"{yyyymm}01", f"{yyyymm}{last:02d}")
+    v = [r["rsqty"] for r in f.rows
+         if r.get("rsqty") is not None and str(r.get("obsdh", ""))[8:10] < "24"]
+    return (sum(v) / len(v) if v else None), len(v)
+
+
+def month_cols(cd: str, r0: dict, r1: dict, a0: float | None, a1: float | None) -> list:
+    """사후 민감도 — 저수량만 **그 달 평균**으로 바꾼 Δ%·k (SAR 면적은 본판 그대로 쌍별).
+
+    2026-10-15 사용자 결정. 본판(같은 촬영 시각의 저수량)은 결과 전에 정한 규칙이라 바꾸지 않고,
+    「규칙을 바꾸면 어떻게 되나」를 따로 보인다. 같은 달의 쌍은 분모가 하나로 뭉친다(민감도 2×2 의 네 쌍 등).
+    """
+    m0, m1 = str(r0.get("obsdh") or "")[:6], str(r1.get("obsdh") or "")[:6]
+    if len(m0) < 6 or len(m1) < 6:
+        return [None, None, None, None]
+    (v0, n0), (v1, n1) = month_mean(cd, m0), month_mean(cd, m1)
+    dV = v1 / v0 - 1 if v0 and v1 else None
+    k = math.log(v1 / v0) / math.log(a1 / a0) if dV is not None and a0 and a1 and a1 != a0 else None
+    return [round(dV * 100, 1) if dV is not None else None, round(k, 2) if k else None, n0, n1]
+
+
 def kst_day(d: str, shift: int) -> str:
     return (datetime.strptime(d, "%Y%m%d") + timedelta(days=shift)).strftime("%Y%m%d")
 
@@ -170,10 +201,15 @@ def main() -> None:
                          "(gee reservoir_km2_v11_dry0812.csv). 없으면 --sar-csv 에서 찾는다")
     ap.add_argument("--tag", help="산출 파일 꼬리표 (기본: v9 또는 CSV 이름)")
     ap.add_argument("--dry-run", action="store_true", help="WAMIS 를 부르지 않고 SAR 면적·변화율만 찍는다")
+    ap.add_argument("--monthly", action="store_true",
+                    help="사후 민감도: 저수량을 그 달 시자료 평균으로 바꾼 열을 덧붙인다(본판 열은 그대로, 꼬리표 _month)")
     a = ap.parse_args()
 
     out = [["저수지", "월", "t0", "t1", "rwl0", "rwl1", "dh_m", "rsrt0", "rsrt1",
-            "SAR_dA_pct", "WAMIS_dV_pct", "k_eff"]]
+            "SAR_dA_pct", "WAMIS_dV_pct", "k_eff"]
+           + (["WAMIS_dV_month_pct", "k_eff_month", "month_hours0", "month_hours1"] if a.monthly else [])]
+    extra = (lambda cd, r0, r1, a0, a1: month_cols(cd, r0, r1, a0, a1)) if a.monthly else (lambda *_: [])
+    sfx = "_month" if a.monthly else ""
     if a.sens_csv:
         sens = sens_from_csv(a.sens_csv)
         tag = a.tag or a.sens_csv[0].stem
@@ -187,12 +223,12 @@ def main() -> None:
                     pct = f"{(a1 / a0 - 1) * 100:+.1f}%" if a0 and a1 else "- (면적 없음)"
                     print(f"  {name:6s} {lab}  {a0} → {a1}  {pct}")
                     continue
-                row = compare(name, lab, at(cd, kst_day(d0, SENS_SHIFT), SENS_HOUR),
-                              at(cd, kst_day(d1, SENS_SHIFT), SENS_HOUR), a0, a1)
+                r0, r1 = at(cd, kst_day(d0, SENS_SHIFT), SENS_HOUR), at(cd, kst_day(d1, SENS_SHIFT), SENS_HOUR)
+                row = compare(name, lab, r0, r1, a0, a1) + extra(cd, r0, r1, a0, a1)
                 out.append(row)
                 print(row, flush=True)
         if not a.dry_run:
-            write(out, tag)
+            write(out, tag + sfx)
         return
 
     sar = sar_from_csv(a.sar_csv) if a.sar_csv else SAR_V9
@@ -223,14 +259,15 @@ def main() -> None:
         vals = [at(cd, kst_day(d, SHIFT[grp][i]), HOUR[grp][i]) for i, d in enumerate(DATES[grp])]
         a_ = sar[name]
         for i0, i1, lab in [(0, 1, "7월"), (2, 3, "8월")]:
-            row = compare(name, lab, vals[i0], vals[i1], a_[i0], a_[i1])
+            row = compare(name, lab, vals[i0], vals[i1], a_[i0], a_[i1]) + extra(cd, vals[i0], vals[i1], a_[i0], a_[i1])
             out.append(row)
             print(row, flush=True)
         if name in dry:   # 본 8월 쌍 바로 아래에 나란히
-            row = compare(name, dry_lab, at(cd, DRY_A[0], 18), vals[3], dry[name][DRY_A[0]], dry[name][DRY_A[1]])
+            r0 = at(cd, DRY_A[0], 18)
+            row = compare(name, dry_lab, r0, vals[3], dry[name][DRY_A[0]], dry[name][DRY_A[1]])                 + extra(cd, r0, vals[3], dry[name][DRY_A[0]], dry[name][DRY_A[1]])
             out.append(row)
             print(row, flush=True)
-    write(out, tag)
+    write(out, tag + sfx)
 
 
 def write(out: list[list], tag: str) -> None:
