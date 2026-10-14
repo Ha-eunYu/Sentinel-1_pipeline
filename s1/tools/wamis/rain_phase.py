@@ -21,9 +21,15 @@
 (2026-10-12: ``dam_daily_20250626_20250901.csv`` · ``dam_daily_20260626_20260901.csv``).
 
     python -m s1.tools.wamis.rain_phase            # data/rain_phase_5d{,_dam}.csv + 표 출력
+    python -m s1.tools.wamis.rain_phase --dates 20250801 20260806 --out data/rain_phase_5d_dam_s2dates.csv
+
+``--dates`` (2026-10-14, S2 세션 요청): **SAR 관측이 아닌 임의 날짜**(예: S2 촬영일)의 담수호 21곳 직전 5일
+강우. 덮음 판정은 하지 않는다(VRT 가 없다). 날짜는 **KST 날짜**로 준다 — WAMIS 일강우가 KST 일 단위다.
+S2 는 KST 11시대 촬영이라 **당일 강우의 일부는 촬영 뒤**다 → 당일 값 ``rf_day_mm`` 를 따로 적어 빼 볼 수 있게 했다.
 """
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import re
@@ -120,8 +126,39 @@ def rain5(series: dict[str, float | None], date: str) -> tuple[float | None, int
     return (sum(got) if got else None), DAYS - len(got)
 
 
+def by_dates(dates: list[str], out: Path) -> None:
+    """임의 날짜 × 담수호 21곳의 직전 5일 강우(덮음 판정 없음)."""
+    rf, names = load_rain()
+    lakes = lake_dams(names)
+    rows = []
+    for d in dates:
+        for lake, cd, _, _ in lakes:
+            mm, miss = rain5(rf.get(cd, {}), d)
+            day = rf.get(cd, {}).get(d)
+            rows.append({"date": d, "lake": lake, "damcd": cd, "basin": BASINS[cd[0]],
+                         "rf5_mm": "" if mm is None else round(mm, 1),
+                         "rf_day_mm": "" if day is None else round(day, 1), "days_missing": miss})
+    with open(out, "w", encoding="utf-8-sig", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+    print(f"-> {out.relative_to(ROOT) if out.is_relative_to(ROOT) else out}  ({len(rows)}행)")
+    gaps = sorted({(r["date"], r["lake"]) for r in rows if r["days_missing"] == DAYS})
+    if gaps:
+        print(f"⚠ 강우 자료가 아예 없는 칸 {len(gaps)}개 — 입력 CSV 기간(06-26~09-01) 밖인지 확인: "
+              + " · ".join(f"{d} {l}" for d, l in gaps[:8]))
+
+
 def main() -> None:
     sys.stdout.reconfigure(encoding="utf-8")
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--dates", nargs="+", metavar="YYYYMMDD", help="임의 날짜(KST) 모드 — SAR 관측 대신")
+    ap.add_argument("--out", type=Path, default=DATA_DIR / "rain_phase_5d_dam_dates.csv", help="--dates 산출 경로")
+    a = ap.parse_args()
+    if a.dates:
+        by_dates(a.dates, a.out if a.out.is_absolute() else ROOT / a.out)
+        return
+
     rf, names = load_rain()
     lakes = lake_dams(names)
     obs = observations()
