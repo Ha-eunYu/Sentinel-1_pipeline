@@ -167,7 +167,7 @@ def fig_a(t: pd.DataFrame, out: Path) -> None:
         ax.annotate(f"{d} {fmt(t.loc[d, 'aug_pct'])}%", xy=(cx, cy), xytext=(lx, ly), ha=ha, va="center",
                     fontsize=FS - 1, color=C_INK,
                     arrowprops=dict(arrowstyle="-", color="#555555", lw=0.8, shrinkA=2, shrinkB=1))
-    ax.set_xlim(825_000, 1_300_000); ax.set_ylim(1_560_000, 1_900_000)
+    ax.set_xlim(825_000, 1_300_000); ax.set_ylim(1_560_000, 1_925_000)   # 안동 유역 북단 1,914,649 까지
     ax.set_aspect("equal"); ax.set_axis_off()
     ax.set_title("(a) 8월 댐유역 수체 면적 변화", loc="left", fontweight="bold")
     cax = fig.add_axes([0.06, 0.075, 0.33, 0.028])
