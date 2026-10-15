@@ -10,6 +10,12 @@
 ``--all`` (2026-10-14): mn_dammain 목록 + DELISTED(성덕·동복) 전부를 7·8월로 순위 낸다 →
 ``data/wamis_rank_jul_aug.csv``. 권역 요약은 **조정지 댐을 뺀다**(수위를 일정하게 묶어 두는 댐이라
 가뭄 신호가 아니다). API 가 2017 이전을 주지 않아 순위는 사실상 10년(2017~2026) 기준이다.
+
+🔴 2026-10-15 사용자 정정 — **순위로 가뭄 권역을 판정하지 않는다.** 댐마다 **자기 10년 기록**과 비교한다
+(2026 값의 10년 중앙값 대비, 10년 최저인지, 더 낮았던 해). 그 판단용 두 모드:
+
+    ... wamis_august_climatology --monthly    # 전국 댐 7·8월 월평균 수위 → data/wamis_monthly_jul_aug.csv
+    ... wamis_august_climatology --levels     # 그 CSV 로 댐별 10년 기록 대비 + 권역별 「자기 중앙값 아래」 개수
 """
 import argparse
 import csv
@@ -30,6 +36,7 @@ GROUPS = {"한강": ("한강", "한강동해"), "금강": ("금강", "만경 · 
           "낙동강·동남": ("낙동강", "형산강", "태화강", "회야 · 수영", "낙동강동해", "낙동강남해"),
           "섬진강": ("섬진강", "섬진강남해", ""), "영산강·탐진": ("영산강", "탐진강")}
 OUT = ROOT / "data" / "wamis_rank_jul_aug.csv"
+MONTHLY_OUT = ROOT / "data" / "wamis_monthly_jul_aug.csv"
 
 
 def monthly(cd: str, months: tuple[str, ...], spans=((2001, 2008), (2009, 2016), (2017, 2026))) -> dict:
@@ -88,7 +95,56 @@ def report_all() -> None:
                   f"   2026 중앙 {statistics.median(a26):4.1f} (≤3위 {sum(x <= 3 for x in a26):2d})")
 
 
+def export_monthly() -> None:
+    """전국 댐(mn_dammain + DELISTED) 7·8월 월평균 수위를 그대로 남긴다 — 판단은 --levels 가 한다."""
+    have, table = set(), []
+    for d in [*fetch_dams(), *DELISTED]:
+        if d.damcd in have:
+            continue
+        have.add(d.damcd)
+        mon = monthly(d.damcd, ("07", "08"), spans=((2009, 2016), (2017, 2026)))
+        for (y, mm), v in sorted(mon.items()):
+            table.append({"권역": d.bbsnnm or "", "댐": d.damnm, "코드": d.damcd, "관리": d.mggvnm or "",
+                          "연": y, "월": int(mm), "월평균수위_m": v})
+        print(d.damnm, len(mon), flush=True)
+    with open(MONTHLY_OUT, "w", encoding="utf-8-sig", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(table[0]))
+        w.writeheader(); w.writerows(table)
+    print(f"-> {MONTHLY_OUT.relative_to(ROOT)} ({len(have)}곳)")
+
+
+def report_levels(year: int = 2026) -> None:
+    """댐마다 자기 10년(2017~) 기록과 비교 — 다른 댐과 견주지 않는다. 조정지 제외."""
+    with open(MONTHLY_OUT, encoding="utf-8-sig") as fh:
+        rs = [r for r in csv.DictReader(fh) if "조정지" not in r["댐"] and int(r["연"]) >= 2017]
+    by = {}
+    for r in rs:
+        by.setdefault((r["권역"], r["댐"], int(r["월"])), {})[int(r["연"])] = float(r["월평균수위_m"])
+    summ = {}
+    for m in (7, 8):
+        print(f"\n== {m}월 {year} — 자기 10년 기록 대비 (중앙값 = 표준 중앙값)")
+        for (g, nm, mm), s in by.items():
+            if mm != m or year not in s:
+                continue
+            med = statistics.median(s.values())
+            lower = sorted(y for y, v in s.items() if v < s[year])
+            a = s[year] - med
+            a25 = s[year - 1] - med if year - 1 in s else float("nan")
+            where = (f"{len(s)}년 최저" if not lower else "중앙값 위" if a > 0.005 else
+                     "·".join(map(str, lower)) + "년 다음으로 낮음" if len(lower) <= 2 else "중앙값 아래")
+            print(f"  {g or '-':8s} {nm:8s} n={len(s):2d}  {year} {a:+7.2f} m  {where:22s}  {year - 1} {a25:+7.2f} m")
+            key = next((k for k, v in GROUPS.items() if g in v), g)
+            t = summ.setdefault((m, key), [0, 0, 0])
+            t[0] += 1; t[1] += a < -0.005; t[2] += not lower
+    print("\n권역 묶음별 — 자기 중앙값 아래 / 자기 기록 최저 / 전체")
+    for (m, key), (n, below, lowest) in sorted(summ.items()):
+        print(f"  {m}월 {key:8s} 아래 {below:2d} · 최저 {lowest:2d} / {n:2d}")
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--all", action="store_true", help="전국 댐 7·8월 순위 + 권역 요약 → data/wamis_rank_jul_aug.csv")
-    (report_all if ap.parse_args().all else report8)()
+    ap.add_argument("--monthly", action="store_true", help="전국 댐 7·8월 월평균 수위 → data/wamis_monthly_jul_aug.csv")
+    ap.add_argument("--levels", action="store_true", help="그 CSV 로 댐별 자기 10년 기록 대비 요약")
+    a = ap.parse_args()
+    (export_monthly if a.monthly else report_levels if a.levels else report_all if a.all else report8)()
