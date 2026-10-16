@@ -42,13 +42,24 @@
 
 ## 3. 남은 처리·코드 작업
 
-- [ ] **EGM 재처리 남은 11장 + VRT 5개** — 0817·0824·0829(각 3장)·0819·0831(각 1장). 포스터용 13/13 은 끝났다.
-  재개: `Start-ScheduledTask -TaskName S1_EGM_L1` (L2 도), 대기열 `temp/egm_queue.txt` 맨 위부터.
-  레인을 Claude 세션 백그라운드 셸로 띄우지 말 것(세션 종료 시 같이 죽는다). 끝나면 `python -m s1.tools.mosaic.rebuild_vrt_egm` → gee 에 (날짜, 궤도) 통보.
+- [ ] **EGM 재처리 남은 11장 + VRT 5개 — 10-16 20:02 착수(사용자 「남은 전처리 싹다」)**. 0817·0824·0829(각 3장)·0819·0831(각 1장),
+  대기열을 한 장씩 쪼갬. 10-17 00:05 기준 6장 착수·5장 대기, 장당 76~100분 → 05:00 전후 끝 예상.
+  **10-17(토) 08:00~14:00 사무실 정전 대비**(PC 는 켜 둔 채 — 사용자 결정):
+  - `S1_EGM_NIGHT_20261017`(`temp/egm_night_20261017.sh`): 레인이 끝나면 바로 `rebuild_vrt_egm`. 05:30 에 시작 안 한 장을
+    `temp/egm_queue_hold.txt` 로 빼고, 07:35 에도 돌면 강제 정지 + 쓰다 만 산출 tif 삭제 + 그 장을 hold 로 되돌림.
+    남은 일이 있으면 `temp/egm_resume_pending` 생성. 로그 `temp/logs/_egm_night_20261017.log`.
+  - `S1_EGM_RESUME_LOGON`(`temp/egm_resume_after_outage.sh`): **다음 로그인 때**(+10-17 15:00 에 로그인돼 있으면) pending 이 있을 때만
+    hold → 대기열 → 레인 → `rebuild_vrt_egm`. 로그 `temp/logs/_egm_resume.log`.
+  - **먼저 확인**: 두 로그 · `temp/egm_resume_pending` 유무 · `temp/logs/_rebuild_vrt_egm_*.log` 의 「📣 gee 에 알릴 것」 → gee 에 (날짜, 궤도) 통보는 사람이 한다.
+  - PC 자동 재부팅 여부는 BIOS(Dell Precision 5820 · Power Management → AC Recovery, 공장값 Power Off)에 달렸고 미확인. 자동 로그인은 꺼져 있다.
+  레인을 Claude 세션 백그라운드 셸로 띄우지 말 것(세션 종료 시 같이 죽는다) — 언제나 작업 스케줄러로.
+- [ ] **v10(EGM 끔) RTC 48장(E:, 112.8 GB) → NAS 이동 — 10-17 00:05 착수**(사용자: 지우지 말고 X: NAS 로). 48장 모두 같은 이름의 EGM 판이 있음을 확인했다.
+  `S1_MOVE_V10_NAS`(`temp/move_v10_to_nas.ps1`): robocopy → 크기·SHA256 대조 → 같은 것만 원본 삭제. 대상 `X:\02_Analysis\Sentinel-1_Drought\v10_poeorb_egmoff_20261012\{2025,2026}`
+  (10-12 의 35장과 같은 폴더). 로그 `temp/logs/_move_v10_nas.log` — 끝나면 `MOVE_V10_DONE`, 불일치는 `MISMATCH`/`MISSING`/`ERROR` 행(원본은 남음). 다시 돌려도 안전.
 - [ ] **S2 음수 반사도 버그** `s2_common.to_reflectance` — 논문 전에 고친다. 인자 기본값은 현행 유지(gee `map_area_s2` 도 import). 고친 뒤 S2 그림(화소 대응) 민감도 정량.
 - [ ] **S2 저장소** `poster-2026-s2` 브랜치(07cff6f·69840d0) — main 미병합·미푸시.
 - [ ] **gee 쪽**: 하루 두 궤도 3건(20250805 둘 다·20250811 DESC134·20260714 ASC127)이 날짜 단위 순회에서 빠진다 → (날짜, 궤도) 단위로 고칠 일(gee 인계 §2-7).
-- [ ] **사용자 결정 대기 3건**: S1 원격 push · E: v10 RTC 48장 처분 · 07-07 폭우 전 수치 사용 여부.
+- [ ] **사용자 결정 대기 2건**: S1 원격 push · 07-07 폭우 전 수치 사용 여부. (E: v10 RTC 48장 처분은 10-16 「NAS 로 이동」으로 결정 — 위)
 - [ ] (작음) WAMIS 댐 목록 79→49곳 축소 대응 — [REVIEW §2-4](REVIEW_20261005_KR.md).
 
 ## 4. 포스터 → 논문 그림·표 대응
